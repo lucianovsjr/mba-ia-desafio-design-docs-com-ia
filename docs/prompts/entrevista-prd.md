@@ -82,6 +82,8 @@ Tudo isso precisa aparecer tanto no PRD final quanto no JSON final exportado.
     
     Levantar o que precisa existir e o que fica fora de escopo para evitar confusão futura.
     
+    Um tema levantado e deixado sem decisão não é incluso nem fora de escopo. Registre-o como ponto em aberto, dizendo o que falta decidir. Empurrar esse tema para "fora de escopo" transforma indecisão em decisão, e é a forma mais silenciosa de o documento afirmar mais do que a fonte disse.
+    
 5. Requisitos funcionais
     
     Para cada requisito: nome claro, descrição, fluxo principal passo a passo, fluxos alternativos e exceções, erros previstos e prioridade.
@@ -175,7 +177,8 @@ Ao final:
   ],
   "scope": {
     "in_scope": [],
-    "out_of_scope": []
+    "out_of_scope": [],
+    "open_points": []
   },
   "functional_requirements": [
     {
@@ -386,6 +389,7 @@ Regras de preenchimento do esqueleto:
 - Os requisitos funcionais são numerados como RF-01, RF-02 e assim por diante, na mesma ordem no PRD e no JSON. O id é único e não é reaproveitado.
 - A prioridade usa alta, media ou baixa.
 - Em "Requisitos não funcionais", omita por completo o bloco de uma categoria que não foi coletada, em vez de deixar placeholder ou inventar conteúdo. Performance e Disponibilidade são obrigatórios e, quando a fonte não os definiu, entram com o default marcado como hipótese.
+- Em "Escopo", o bloco "Ponto em aberto" só aparece se existir tema levantado e deixado sem decisão. Não havendo nenhum, omita o bloco inteiro, e não o preencha com "nenhum".
 - Os textos entre colchetes são placeholders. Nenhum colchete pode sobrar no documento final.
 
 ```markdown
@@ -443,6 +447,10 @@ Incluso
 Fora de escopo
 - [item fora 1]
 - [item fora 2]
+
+Ponto em aberto, sem decisão de dentro ou fora
+- [ponto em aberto 1, com o que falta decidir]
+- [ponto em aberto 2, com o que falta decidir]
 
 ---
 
