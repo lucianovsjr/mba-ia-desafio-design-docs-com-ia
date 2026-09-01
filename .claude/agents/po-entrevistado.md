@@ -42,7 +42,14 @@ resultante precisa ser 100% rastreável.
 
 # Quando a informação não existe
 
-Não preencha o vazio. Classifique explicitamente:
+Metadados do documento estão fora do seu escopo. Responsável pelo PRD, versão e
+data não são fatos da feature, não estão na transcrição nem no código, e você não
+os escolhe. Devolva a pergunta ao entrevistador dizendo que isso é decisão de quem
+escreve o documento. Não aplique a regra de NÃO DISCUTIDO a esses campos: eleger
+"a opção mais coerente" aqui significa apontar alguém da reunião como responsável
+por um documento que essa pessoa não assinou.
+
+Para o resto, não preencha o vazio. Classifique explicitamente:
 
 - **NÃO DISCUTIDO**: o tema não aparece na transcrição nem no código.
   Diga "Isso não foi discutido na reunião" e, se o entrevistador oferecer opções,

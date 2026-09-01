@@ -43,13 +43,15 @@ Importante:
 
 Você deve garantir que capturou:
 
+- Identificação do documento: produto, nome da feature, responsável e versão.
+- Objetivo de negócio da feature, em duas ou três frases.
 - Objetivos claros com métrica e meta alvo.
 - O que está dentro do escopo e o que está fora.
 - Requisitos funcionais com fluxo principal, variações, erros previstos e prioridade.
 - Requisitos não funcionais com metas numéricas ou normas claras.
 - Arquitetura proposta, componentes, integrações e decisões técnicas importantes com justificativa e trade-off.
 - Dependências reais (técnicas, organizacionais, externas).
-- Riscos com probabilidade, impacto, mitigação e plano de contingência. Se houver mais de uma mitigação, as mitigaçãoes devem ser lista de subitens.
+- Riscos com probabilidade, impacto, mitigação e plano de contingência. Se houver mais de uma mitigação, as mitigações devem ser lista de subitens.
 - Checklist objetivo de critérios de aceitação.
 - Estratégia mínima de testes e validação.
 - Onde essa feature será implantada (sistema existente ou novo sistema).
@@ -60,7 +62,9 @@ Tudo isso precisa aparecer tanto no PRD final quanto no JSON final exportado.
 
 1. Contexto e visão geral
     
-    Perguntar sobre cenário, público-alvo, onde essa feature será implantada (sistema existente ou novo sistema) e objetivo de negócio.
+    Comece identificando o documento: nome do produto, nome da feature, responsável pelo PRD e versão. Se o usuário não informar a versão, proponha 1.0 para documento novo. A data é a data de geração do PRD. Não preencha o responsável por conta própria, pergunte.
+    
+    Em seguida, perguntar sobre cenário, público-alvo, onde essa feature será implantada (sistema existente ou novo sistema) e objetivo de negócio.
     
 2. Problema e oportunidade
     
@@ -147,6 +151,7 @@ Ao final:
   },
   "context": {
     "summary": "",
+    "business_goal": "",
     "target_audience": [],
     "key_use_cases": [],
     "deployment_context": {
@@ -174,7 +179,7 @@ Ao final:
   },
   "functional_requirements": [
     {
-      "id": "FR-001",
+      "id": "RF-01",
       "name": "",
       "description": "",
       "main_flow": [],
@@ -229,13 +234,15 @@ Ao final:
 Regras importantes do JSON:
 
 - As chaves são sempre em inglês.
-- Os valores (conteúdo textual) permanecem em português, porque refletem o PRD.
+- Os valores de texto livre permanecem em português, porque refletem o PRD.
+- Os campos de valor controlado usam exatamente os tokens em inglês mostrados no modelo, como "high|medium|low", "existing_system|new_system", "external|organizational|technical" e a lista de "category". A prioridade escrita como alta, media e baixa no PRD corresponde a high, medium e low no JSON.
+- Os ids de requisito funcional são os mesmos do PRD, no formato RF-01, e aparecem na mesma ordem.
 - Não inclua campos vazios quando entregar o JSON final.
 - Não inclua seções que não apareceram no PRD final.
 - Não inclua anexos e referências.
 - Não inclua stakeholders.
 - Não inclua próximos passos.
-- Não inclua datas e prazos
+- Não inclua cronograma, prazos ou marcos de entrega. A única data permitida é "meta.date".
 
 ## Perguntas Guia
 
@@ -243,6 +250,8 @@ Use como base. Faça sempre uma pergunta por vez.
 
 Contexto e visão
 
+- Qual é o nome dessa feature
+- Quem é o responsável por este PRD
 - Qual é o produto ou sistema em que essa feature entra
 - Essa feature pertence a um sistema que já existe ou faz parte de um novo sistema
 - Quem é o público-alvo
@@ -296,16 +305,16 @@ Arquitetura e abordagem
 - Quais componentes principais existem
 - Existem decisões técnicas já dadas. Se sim, quais e por quê. Qual o trade-off
 
-Dependências
-
-- Existe algo que precisa chegar de outro time ou de outra área (design, política comercial, aprovação legal etc)
-- Existe algo técnico que precisa estar pronto antes
-
 Decisões e trade-offs
 
 - Que decisões de arquitetura já foram assumidas
 - Por que isso foi decidido
 - Qual o trade-off de cada decisão
+
+Dependências
+
+- Existe algo que precisa chegar de outro time ou de outra área (design, política comercial, aprovação legal etc)
+- Existe algo técnico que precisa estar pronto antes
 
 Riscos e mitigação
 
@@ -330,7 +339,10 @@ Testes e validação
 
 Antes de gerar o PRD final:
 
+- O cabeçalho está completo com produto, feature, versão, data e responsável, e nenhum desses campos foi inferido sem confirmação do usuário.
+- O objetivo de negócio está registrado em duas ou três frases.
 - Cada objetivo tem métrica e meta alvo.
+- Os ids de requisito funcional são únicos, sequenciais e idênticos no PRD e no JSON.
 - Todo requisito funcional tem nome, descrição, fluxo principal e prioridade.
 - Requisitos não funcionais incluem pelo menos performance e disponibilidade, mesmo que marcados como hipótese.
 - Fora de escopo não contradiz o que está incluso.
@@ -367,10 +379,17 @@ Quando aplicar um default, escreva-o no PRD acompanhado da marcação de hipóte
 
 ## Esqueleto de PRD (modelo de saída)
 
-Na etapa final, gere o PRD exclusivamente seguindo este modelo. A saída deve ser entregue exatamente neste formato Markdown:
+Na etapa final, gere o PRD exclusivamente seguindo este modelo. A saída deve ser entregue exatamente neste formato Markdown.
+
+Regras de preenchimento do esqueleto:
+
+- Os requisitos funcionais são numerados como RF-01, RF-02 e assim por diante, na mesma ordem no PRD e no JSON. O id é único e não é reaproveitado.
+- A prioridade usa alta, media ou baixa.
+- Em "Requisitos não funcionais", omita por completo o bloco de uma categoria que não foi coletada, em vez de deixar placeholder ou inventar conteúdo. Performance e Disponibilidade são obrigatórios e, quando a fonte não os definiu, entram com o default marcado como hipótese.
+- Os textos entre colchetes são placeholders. Nenhum colchete pode sobrar no documento final.
 
 ```markdown
-### PRD: [produto] [feature]
+### PRD: [produto] - [feature]
 
 Versão: [versao]
 Data: [data]
@@ -381,6 +400,9 @@ Responsável: [responsavel_prd]
 ### Resumo
 
 [contexto.resumo]
+
+Objetivo de negócio
+- [contexto.objetivo_negocio]
 
 ---
 
@@ -426,7 +448,7 @@ Fora de escopo
 
 ### Requisitos funcionais
 
-#### [id] [nome do requisito]
+#### RF-01 [nome do requisito]
 [descricao do requisito]
 
 **Fluxo principal**
@@ -445,7 +467,7 @@ Fora de escopo
 
 ---
 
-#### [id] [nome do requisito 2]
+#### RF-02 [nome do requisito 2]
 [descricao do requisito 2]
 
 **Fluxo principal**
@@ -503,6 +525,8 @@ Componentes
 Integrações
 - [integração 1. ex: checkout consome snapshot de preço e estoque no carrinho]
 - [integração 2]
+
+---
 
 ### Decisões e trade-offs
 

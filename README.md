@@ -35,7 +35,7 @@ O trabalho foi organizado em torno de uma ideia: **nenhum agente audita o própr
 5. **Tracker de rastreabilidade** do PRD.
 6. RFC, FDD e ADRs, derivados do PRD e da transcrição, seguindo o mesmo ciclo.
 
-### Os três papéis
+### Os quatro papéis
 
 | Papel | O que faz | Por que é separado |
 | --- | --- | --- |
@@ -44,7 +44,18 @@ O trabalho foi organizado em torno de uma ideia: **nenhum agente audita o própr
 | **Revisor** (`revisor-prd`) | Audita o documento contra as checagens de consistência e classifica cada item como rastreado, derivado ou inventado | Quem redigiu revisa a lembrança do que quis dizer, não a fonte |
 | **Tracker** (`tracker-rastreabilidade`) | Escritor único do tracker. Vai à transcrição por conta própria para determinar a origem de cada item | Se receber a atribuição pronta de quem redigiu, deixa de ser uma segunda leitura e vira uma cópia |
 
-A interação com a IA no modo automatizado funciona como um loop: a sessão principal conduz a entrevista, envia cada bloco de etapas ao entrevistado, recebe as respostas, resume para revisão humana e segue. Ao final, chama o revisor e o tracker, e cruza os dois relatórios.
+### Como o loop de entrevista roda
+
+A sessão principal conduz a entrevista, envia cada bloco de etapas ao entrevistado, recebe as respostas, resume para revisão humana e segue. Ao final, chama o revisor e o tracker, e cruza os dois relatórios. Quatro regras de execução saíram de erros observados na prática:
+
+- **Um único subagente, do começo ao fim.** A primeira etapa abre o entrevistado, e todas as seguintes continuam a mesma conversa. Abrir um subagente novo a cada etapa perde o histórico, e o entrevistado passa a se contradizer entre etapas.
+- **Perguntas agrupadas por etapa, não uma a uma.** São 12 mensagens em vez de cerca de 40 idas e voltas. O princípio de uma pergunta por vez existe para não sobrecarregar uma pessoa, e não se aplica a um subagente que lê a fonte inteira antes de responder.
+- **O cabeçalho do documento é perguntado ao humano.** Responsável e versão são metadados do documento, não da feature: não existem na transcrição nem no código. Perguntados ao entrevistado, voltariam como um nome qualquer da reunião. Nesta execução o responsável e a versão foram confirmados diretamente com quem rodou o comando, antes de a entrevista começar.
+- **O resumo de cada etapa é escrito para o humano, e a entrevista segue sem esperar confirmação.** O prompt base pede confirmação ao final de cada etapa, mas a confirmação do próprio entrevistado não tem valor de revisão. Quem revisa é quem lê o resumo no terminal.
+
+### O tracker está preso a uma versão do documento
+
+Cada linha do tracker descreve um item de uma versão específica do documento. Regerar o documento invalida essas linhas em bloco, e elas não deixam de existir sozinhas. Por isso a regeração remove as linhas do documento antigo antes de chamar o tracker, que reconstrói a partir do texto atual. Um tracker desatualizado é pior que um tracker ausente, porque aparenta rastreabilidade sobre conteúdo que já não existe.
 
 ### A decisão de fundo sobre o entrevistado
 
@@ -133,7 +144,7 @@ tracker existe para dar.
 
 ## Iterações e ajustes
 
-Seis iterações principais até o PRD e o tracker ficarem prontos. As mais instrutivas:
+Dez iterações principais até o PRD e o tracker ficarem prontos, ao longo de duas execuções completas do ciclo. As mais instrutivas:
 
 ### 1. A IA inventou um requisito, e não foi o agente que eu esperava
 
@@ -168,6 +179,30 @@ A quarta correção mudou de natureza e melhorou: em vez de o revisor apenas ver
 ### 6. Vinte achados aplicados no PRD
 
 A auditoria devolveu 5 bloqueadores, 7 ajustes e 8 notas. Todos foram aplicados. Além dos já descritos, os mais substantivos: cinco riscos tinham "plano de contingência não definido", que é um campo vazio disfarçado de conteúdo, e receberam plano B real; a garantia de ordenação afirmava mais do que o desenho sustenta, já que retry com backoff quebra a ordem de chegada; e o critério de prefixo `WEBHOOK_` em todos os códigos de erro contradizia quatro requisitos que usam códigos transversais já existentes no código.
+
+### 7. A marcação de hipótese foi aplicada de forma desigual dentro do mesmo documento
+
+Na segunda execução, o revisor apontou dois bloqueadores da mesma família. O PRD dizia com todas as letras, na seção de problemas, que a reunião não classificou prioridade e que a classificação era hipótese. Mas atribuía prioridade alta ou média a cada um dos oito requisitos funcionais, e probabilidade baixa ou média a cada um dos seis riscos, sem nenhuma marcação, como se fossem consenso da reunião. A transcrição não atribui prioridade nem probabilidade a nada.
+
+O que torna esse caso instrutivo é que a regra já estava no prompt e já tinha sido obedecida uma vez, poucas seções antes. O redator marcou a hipótese onde ela era visível, na seção que fala explicitamente sobre priorização, e deixou passar onde ela estava embutida em um campo de formulário. Um campo obrigatório do esqueleto é um convite a preencher, e preencher parece menos uma afirmação do que escrever uma frase. A correção foi registrar a hipótese uma vez por seção, no mesmo formato já usado na tabela de métricas.
+
+### 8. Um bloqueador de rastreabilidade cujo diagnóstico estava certo pela razão errada
+
+O revisor abriu o relatório acusando o tracker de fabricar cobertura: nove linhas descreviam riscos, dependências e requisitos não funcionais que não existiam em lugar nenhum do PRD. A acusação era verificável e correta. A causa não era.
+
+O tracker não tinha inventado nada. Ele estava íntegro para o PRD da execução anterior, que acabara de ser sobrescrito. Eram 156 linhas descrevendo um documento que deixara de existir minutos antes. O revisor não tinha como saber disso, porque só enxerga os arquivos no estado atual, e a leitura mais natural de uma linha sem correspondência é que ela foi inventada. Duas falhas muito diferentes, um sintoma idêntico. Foi o que motivou a regra de que a regeração de um documento remove as linhas dele do tracker antes de reconstruir.
+
+### 9. Um critério de aceitação que perdeu um número no meio do caminho
+
+O backoff é 1 minuto, 5 minutos, 30 minutos, 2 horas e 12 horas. O critério de aceitação listou os quatro primeiros e omitiu o último. Isoladamente parece um deslize de digitação, mas o efeito é maior: sem as 12 horas a soma dá cerca de 2,6 horas, e o documento afirma em outros três lugares que a janela cobre cerca de 15 horas. Um critério de aceitação é o que alguém vai transformar em teste, então a versão truncada teria virado um teste que valida o comportamento errado e passa.
+
+O revisor pegou pela aritmética, não pela leitura. Vale registrar como a classe de erro que só um cruzamento numérico entre seções encontra, irmã da inconsistência descrita na iteração 2.
+
+### 10. Um achado do revisor que não era um achado
+
+O relatório questionou o campo Responsável, por não haver na transcrição nenhuma linha designando alguém como dono do PRD. Está correto quanto ao fato e errado quanto à conclusão: responsável e versão são os dois campos que o processo deliberadamente pergunta ao humano, justamente porque não estão na fonte. O revisor lê arquivos, não a sessão, e por isso enxerga como lacuna de rastreabilidade aquilo que foi confirmado fora do arquivo.
+
+O achado foi registrado e não aplicado. É o exemplo mais limpo de que o relatório de um auditor é entrada para julgamento, não veredito: aplicar os quatro achados sem discriminar teria degradado o documento em vez de corrigi-lo. Também mostra o limite do papel, que audita o produto e não consegue auditar o processo de coleta.
 
 ---
 

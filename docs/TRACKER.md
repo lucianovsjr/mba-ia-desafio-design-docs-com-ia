@@ -12,159 +12,182 @@ Cobertura atual: `docs/PRD.md`. As linhas de RFC, FDD e ADRs serão acrescentada
 
 | ID | Documento | Tipo | Conteúdo (resumo) | Fonte | Localização |
 | --- | --- | --- | --- | --- | --- |
-| PRD-CTX-01 | docs/PRD.md | Contexto | Três clientes B2B pediram formalmente notificação em tempo real de mudança de status | TRANSCRICAO | `[09:00] Marcos` |
-| PRD-CTX-02 | docs/PRD.md | Problema | Clientes fazem polling no GET /orders, tornando a integração lenta e cara | TRANSCRICAO | `[09:00] Marcos` |
-| PRD-CTX-03 | docs/PRD.md | Restrição | Risco de a Atlas migrar para o concorrente se não houver entrega no prazo | TRANSCRICAO | `[09:00] Marcos` |
-| PRD-CTX-04 | docs/PRD.md | Contexto | Público-alvo inclui ADMIN interno, único autorizado a reprocessar a DLQ | TRANSCRICAO | `[09:36] Sofia` |
-| PRD-CTX-05 | docs/PRD.md | Contexto | Feature entra em sistema existente, como módulo no padrão dos demais domínios | CODIGO | `src/modules/orders/` |
-| PRD-CTX-06 | docs/PRD.md | Contexto | A aplicação não possui hoje mecanismo de notificação externa, eventos ou filas | CODIGO | `src/modules/` |
-| PRD-OBJ-01 | docs/PRD.md | Objetivo | Latência aceita pelo cliente como tempo real é abaixo de 10 segundos | TRANSCRICAO | `[09:02] Marcos` |
-| PRD-OBJ-02 | docs/PRD.md | Objetivo | Latência de enfileiramento de 2 segundos no pior caso, aceita como decisão | TRANSCRICAO | `[09:10] Larissa` |
-| PRD-OBJ-03 | docs/PRD.md | Objetivo | Cliente aprovou explicitamente a latência de 2 segundos | TRANSCRICAO | `[09:10] Marcos` |
-| PRD-OBJ-04 | docs/PRD.md | Objetivo | Janela de recuperação de aproximadamente 15 horas aceita como suficiente | TRANSCRICAO | `[09:17] Marcos` |
-| PRD-OBJ-05 | docs/PRD.md | Objetivo | Grace period de 24 horas na rotação de secret | TRANSCRICAO | `[09:21] Sofia` |
-| PRD-OBJ-06 | docs/PRD.md | Objetivo | Nenhum evento descartado silenciosamente, com DLQ como destino final (meta derivada do desenho) | TRANSCRICAO | `[09:18] Diego` |
-| PRD-SCP-01 | docs/PRD.md | Escopo | Escopo outbound-only: o sistema envia webhooks e não recebe | TRANSCRICAO | `[09:02] Marcos` |
-| PRD-SCP-02 | docs/PRD.md | Escopo | Confirmação de que outbound simplifica o desenho de segurança | TRANSCRICAO | `[09:03] Sofia` |
-| PRD-SCP-03 | docs/PRD.md | Fora de escopo | Adiado: email de alerta ao cliente quando o webhook falha repetidamente | TRANSCRICAO | `[09:37] Larissa` |
-| PRD-SCP-04 | docs/PRD.md | Fora de escopo | Adiado: rate limiting de saída, a observar antes de implementar | TRANSCRICAO | `[09:39] Diego` |
-| PRD-SCP-05 | docs/PRD.md | Fora de escopo | Adiado: múltiplos workers em paralelo e ordenação global | TRANSCRICAO | `[09:13] Diego` |
-| PRD-SCP-06 | docs/PRD.md | Fora de escopo | Adiado: arquivamento das linhas entregues da outbox | TRANSCRICAO | `[09:08] Diego` |
-| PRD-SCP-07 | docs/PRD.md | Fora de escopo | Adiado: endurecimento da autorização do CRUD de webhook | TRANSCRICAO | `[09:37] Sofia` |
-| PRD-SCP-08 | docs/PRD.md | Fora de escopo | Adiado: dashboard visual, transferido para o time de frontend | TRANSCRICAO | `[09:40] Larissa` |
-| PRD-SCP-09 | docs/PRD.md | Trade-off | Descartado: disparo síncrono de HTTP dentro do changeStatus | TRANSCRICAO | `[09:04] Bruno` |
-| PRD-SCP-10 | docs/PRD.md | Trade-off | Descartado: síncrono reafirmado como fora de questão | TRANSCRICAO | `[09:06] Diego` |
-| PRD-SCP-11 | docs/PRD.md | Trade-off | Descartado: Redis Streams ou fila externa, por overengineering e infra nova | TRANSCRICAO | `[09:07] Diego` |
-| PRD-SCP-12 | docs/PRD.md | Trade-off | Descartado: trigger de banco, pois MySQL não notifica processo externo | TRANSCRICAO | `[09:09] Diego` |
-| PRD-SCP-13 | docs/PRD.md | Trade-off | Descartado: worker dentro da instância da API | TRANSCRICAO | `[09:11] Diego` |
-| PRD-SCP-14 | docs/PRD.md | Trade-off | Descartado: retry indefinido com backoff | TRANSCRICAO | `[09:15] Diego` |
-| PRD-SCP-15 | docs/PRD.md | Trade-off | Descartado: 3 tentativas, insuficientes para manutenção planejada de 2 horas | TRANSCRICAO | `[09:16] Diego` |
-| PRD-SCP-16 | docs/PRD.md | Trade-off | Descartado: DLQ como flag na própria outbox | TRANSCRICAO | `[09:18] Diego` |
-| PRD-SCP-17 | docs/PRD.md | Trade-off | Descartado: entrega exactly-once, por exigir coordenação bilateral | TRANSCRICAO | `[09:25] Diego` |
-| PRD-SCP-18 | docs/PRD.md | Trade-off | Descartado: secret global de plataforma | TRANSCRICAO | `[09:21] Sofia` |
-| PRD-SCP-19 | docs/PRD.md | Trade-off | Descartado: truncamento de payload acima do limite, em favor de erro | TRANSCRICAO | `[09:23] Sofia` |
-| PRD-SCP-20 | docs/PRD.md | Trade-off | Descartado: envio dos itens do pedido no payload | TRANSCRICAO | `[09:43] Diego` |
-| PRD-SCP-21 | docs/PRD.md | Trade-off | Descartado: guardar apenas order_id e renderizar o payload no envio | TRANSCRICAO | `[09:52] Larissa` |
-| PRD-SCP-22 | docs/PRD.md | Trade-off | Descartado: id auto incremental na outbox, em favor de UUID | TRANSCRICAO | `[09:51] Larissa` |
-| PRD-SCP-23 | docs/PRD.md | Trade-off | Descartado: customer_id implícito no JWT | TRANSCRICAO | `[09:32] Larissa` |
-| PRD-FR-01 | docs/PRD.md | Requisito Funcional | Cadastro de webhook com url, lista de status e secret gerada pela plataforma | TRANSCRICAO | `[09:31] Marcos` |
-| PRD-FR-01a | docs/PRD.md | Requisito Funcional | Tabela de configuração armazena url, secret, customer_id e estado ativo | TRANSCRICAO | `[09:21] Bruno` |
-| PRD-FR-01b | docs/PRD.md | Requisito Funcional | customer_id vai no body ou no path, não vem do JWT | TRANSCRICAO | `[09:32] Larissa` |
-| PRD-FR-01c | docs/PRD.md | Restrição | JWT atual é do usuário operador e não carrega vínculo com customer | CODIGO | `src/middlewares/auth.middleware.ts` |
-| PRD-FR-01d | docs/PRD.md | Requisito Funcional | Validação de body por schema Zod, no padrão do middleware existente | CODIGO | `src/middlewares/validate.middleware.ts` |
-| PRD-FR-02 | docs/PRD.md | Requisito Funcional | PATCH para editar, DELETE para remover e GET para listar webhooks do customer | TRANSCRICAO | `[09:33] Bruno` |
-| PRD-FR-03 | docs/PRD.md | Requisito Funcional | Filtro de eventos por lista de status que o webhook quer ouvir | TRANSCRICAO | `[09:33] Marcos` |
-| PRD-FR-03a | docs/PRD.md | Decisão | Filtro aplicado na inserção da outbox, não no envio | TRANSCRICAO | `[09:34] Bruno` |
-| PRD-FR-03b | docs/PRD.md | Decisão | Concordância com o filtro na inserção | TRANSCRICAO | `[09:34] Diego` |
-| PRD-FR-03c | docs/PRD.md | Restrição | Status válidos são os do enum de status de pedido existente | CODIGO | `prisma/schema.prisma` |
-| PRD-FR-04 | docs/PRD.md | Requisito Funcional | Insert na outbox dentro da mesma transação que atualiza orders e history | TRANSCRICAO | `[09:06] Diego` |
-| PRD-FR-04a | docs/PRD.md | Requisito Funcional | Alteração crítica ocorre no método changeStatus do service de orders | TRANSCRICAO | `[09:40] Bruno` |
-| PRD-FR-04b | docs/PRD.md | Restrição | Fora da transação a garantia de atomicidade se perde | TRANSCRICAO | `[09:41] Diego` |
-| PRD-FR-04c | docs/PRD.md | Requisito Funcional | Transação existente já atualiza order, histórico de status e estoque | CODIGO | `src/modules/orders/order.service.ts` |
-| PRD-FR-04d | docs/PRD.md | Restrição | Transição de status é validada por máquina de estados existente | CODIGO | `src/modules/orders/order.status.ts` |
-| PRD-FR-05 | docs/PRD.md | Requisito Funcional | Worker em polling a cada 2 segundos, buscando os pendentes mais antigos | TRANSCRICAO | `[09:09] Diego` |
-| PRD-FR-05a | docs/PRD.md | Requisito Funcional | Leitura só de pendentes em batch pequeno, com índices em status e created_at | TRANSCRICAO | `[09:08] Diego` |
-| PRD-FR-05b | docs/PRD.md | Requisito Funcional | Timeout de 10 segundos no envio, tratado como falha | TRANSCRICAO | `[09:42] Diego` |
-| PRD-FR-05c | docs/PRD.md | Restrição | Estados da outbox: pendente, processando, falhou e entregue | TRANSCRICAO | `[09:08] Diego` |
-| PRD-FR-06 | docs/PRD.md | Requisito Funcional | Backoff exponencial com teto de tentativas antes de falha permanente | TRANSCRICAO | `[09:15] Diego` |
-| PRD-FR-06a | docs/PRD.md | Decisão | Progressão 1m, 5m, 30m, 2h e 12h, totalizando quase 15 horas | TRANSCRICAO | `[09:17] Diego` |
-| PRD-FR-06b | docs/PRD.md | Decisão | Cinco tentativas confirmadas como decisão fechada | TRANSCRICAO | `[09:17] Larissa` |
-| PRD-FR-07 | docs/PRD.md | Requisito Funcional | DLQ em tabela separada com payload, motivo da falha e timestamp | TRANSCRICAO | `[09:18] Diego` |
-| PRD-FR-07a | docs/PRD.md | Requisito Funcional | Replay manual por endpoint admin, recolocando o evento na outbox | TRANSCRICAO | `[09:18] Diego` |
-| PRD-FR-07b | docs/PRD.md | Requisito Funcional | Caminho POST /admin/webhooks/dead-letter/:id/replay | TRANSCRICAO | `[09:35] Diego` |
-| PRD-FR-07c | docs/PRD.md | Requisito Funcional | Replay exige role ADMIN e log de auditoria de quem executou | TRANSCRICAO | `[09:36] Sofia` |
-| PRD-FR-07d | docs/PRD.md | Decisão | Reuso do requireRole existente para o controle de papel | TRANSCRICAO | `[09:36] Larissa` |
-| PRD-FR-07e | docs/PRD.md | Restrição | requireRole e o retorno 403 já existem no middleware de autenticação | CODIGO | `src/middlewares/auth.middleware.ts` |
-| PRD-FR-07f | docs/PRD.md | Restrição | Caminhos ficam sob o prefixo versionado da API | CODIGO | `src/app.ts` |
-| PRD-FR-08 | docs/PRD.md | Requisito Funcional | Assinatura HMAC do payload enviada no header X-Signature | TRANSCRICAO | `[09:20] Sofia` |
-| PRD-FR-08a | docs/PRD.md | Decisão | Algoritmo SHA-256, por ser padrão de mercado com biblioteca disponível | TRANSCRICAO | `[09:20] Sofia` |
-| PRD-FR-08b | docs/PRD.md | Requisito Funcional | Headers X-Event-Id, X-Signature, X-Timestamp e Content-Type application/json | TRANSCRICAO | `[09:44] Diego` |
-| PRD-FR-08c | docs/PRD.md | Requisito Funcional | Header X-Webhook-Id para cliente com múltiplos cadastros | TRANSCRICAO | `[09:44] Sofia` |
-| PRD-FR-08d | docs/PRD.md | Requisito Funcional | Formato do payload em JSON com event_id, event_type, timestamp ISO 8601 e campos da order | TRANSCRICAO | `[09:43] Diego` |
-| PRD-FR-08e | docs/PRD.md | Restrição | Campos do payload existem no model de pedido | CODIGO | `prisma/schema.prisma` |
-| PRD-FR-09 | docs/PRD.md | Requisito Funcional | Secret única por endpoint, nunca global | TRANSCRICAO | `[09:21] Sofia` |
-| PRD-FR-09a | docs/PRD.md | Requisito Funcional | Rotação de secret por API com grace period de 24 horas | TRANSCRICAO | `[09:21] Sofia` |
-| PRD-FR-09b | docs/PRD.md | Contexto | Motivação: cliente já vazou secret em log de aplicação | TRANSCRICAO | `[09:22] Diego` |
-| PRD-FR-09c | docs/PRD.md | Requisito Não Funcional | Teto de 64KB por payload, com erro em vez de truncamento | TRANSCRICAO | `[09:24] Diego` |
-| PRD-FR-09d | docs/PRD.md | Requisito Funcional | Código de erro WEBHOOK_SECRET_REQUIRED citado, sem condição definida | TRANSCRICAO | `[09:28] Bruno` |
-| PRD-FR-10 | docs/PRD.md | Requisito Funcional | Histórico de entregas com sucesso, falha, payload, response e tempo de resposta | TRANSCRICAO | `[09:34] Marcos` |
-| PRD-FR-10a | docs/PRD.md | Requisito Funcional | Helper de paginação já existente como padrão de listagem (hipótese) | CODIGO | `src/shared/http/response.ts` |
-| PRD-FR-11 | docs/PRD.md | Decisão | Prefixo WEBHOOK_ em todos os códigos de erro do módulo | TRANSCRICAO | `[09:29] Larissa` |
-| PRD-FR-11a | docs/PRD.md | Requisito Funcional | Erros do módulo derivam de AppError, no padrão dos erros de domínio existentes | TRANSCRICAO | `[09:28] Bruno` |
-| PRD-FR-11b | docs/PRD.md | Restrição | Error middleware centralizado já trata AppError, Zod e Prisma sem alteração | TRANSCRICAO | `[09:29] Bruno` |
-| PRD-FR-11c | docs/PRD.md | Restrição | AppError e classes derivadas existentes | CODIGO | `src/shared/errors/http-errors.ts` |
-| PRD-FR-11d | docs/PRD.md | Restrição | Error middleware é handler do ciclo HTTP e não cobre o worker (inferência) | CODIGO | `src/middlewares/error.middleware.ts` |
-| PRD-FR-11e | docs/PRD.md | Restrição | Logger Pino já presente, sem dependência nova | TRANSCRICAO | `[09:29] Bruno` |
-| PRD-FR-11f | docs/PRD.md | Restrição | Configuração do logger existente | CODIGO | `src/shared/logger/index.ts` |
-| PRD-FR-12 | docs/PRD.md | Requisito Funcional | Módulo em src/modules/webhooks com controller, service, repository, routes e schemas | TRANSCRICAO | `[09:27] Bruno` |
-| PRD-FR-12a | docs/PRD.md | Requisito Funcional | Entry-point src/worker.ts e script npm run worker | TRANSCRICAO | `[09:11] Larissa` |
-| PRD-FR-12b | docs/PRD.md | Requisito Funcional | Lógica de processamento em arquivo dentro do módulo de webhooks | TRANSCRICAO | `[09:28] Bruno` |
-| PRD-FR-12c | docs/PRD.md | Decisão | Ids em UUID, seguindo o padrão do projeto | TRANSCRICAO | `[09:51] Larissa` |
-| PRD-FR-12d | docs/PRD.md | Restrição | Padrão de UUID confirmado no schema do banco | CODIGO | `prisma/schema.prisma` |
-| PRD-FR-12e | docs/PRD.md | Restrição | Projeto hoje possui apenas o entry-point da API | CODIGO | `package.json` |
-| PRD-FR-12f | docs/PRD.md | Restrição | Router do módulo é registrado no agregador de rotas existente | CODIGO | `src/routes/index.ts` |
-| PRD-NFR-01 | docs/PRD.md | Requisito Não Funcional | Latência abaixo de 10 segundos, com 2 segundos no pior caso | TRANSCRICAO | `[09:10] Larissa` |
-| PRD-NFR-02 | docs/PRD.md | Requisito Não Funcional | Nenhuma chamada de rede dentro da transação de mudança de status | TRANSCRICAO | `[09:04] Bruno` |
-| PRD-NFR-03 | docs/PRD.md | Requisito Não Funcional | Nenhuma linha inserida quando o status não é assinado | TRANSCRICAO | `[09:34] Bruno` |
-| PRD-NFR-04 | docs/PRD.md | Requisito Não Funcional | Envio sequencial dentro do batch para preservar a ordenação (hipótese) | TRANSCRICAO | `[09:12] Diego` |
-| PRD-NFR-05 | docs/PRD.md | Requisito Não Funcional | Disponibilidade alvo de 99.9 por cento (hipótese, não definida na reunião) | TRANSCRICAO | `[09:11] Diego` |
-| PRD-NFR-06 | docs/PRD.md | Requisito Não Funcional | TLS obrigatório, com recusa de url http na validação | TRANSCRICAO | `[09:23] Sofia` |
-| PRD-NFR-07 | docs/PRD.md | Requisito Não Funcional | Header X-Timestamp permite ao cliente detectar tentativa de replay | TRANSCRICAO | `[09:44] Diego` |
-| PRD-NFR-08 | docs/PRD.md | Requisito Não Funcional | CRUD aberto a qualquer papel autenticado nesta fase | TRANSCRICAO | `[09:37] Sofia` |
-| PRD-NFR-09 | docs/PRD.md | Requisito Não Funcional | Redação de campos sensíveis já configurada no logger | CODIGO | `src/shared/logger/index.ts` |
-| PRD-NFR-10 | docs/PRD.md | Requisito Não Funcional | Papéis ADMIN e OPERATOR existentes como base de autorização | CODIGO | `prisma/schema.prisma` |
-| PRD-NFR-11 | docs/PRD.md | Requisito Não Funcional | Log de auditoria do replay de DLQ | TRANSCRICAO | `[09:36] Sofia` |
-| PRD-NFR-12 | docs/PRD.md | Requisito Não Funcional | Garantia de entrega at-least-once, com possibilidade de evento duplicado | TRANSCRICAO | `[09:24] Diego` |
-| PRD-NFR-13 | docs/PRD.md | Requisito Não Funcional | Deduplicação pelo cliente através do X-Event-Id com UUID por evento | TRANSCRICAO | `[09:25] Diego` |
-| PRD-NFR-14 | docs/PRD.md | Requisito Não Funcional | Payload gravado como snapshot na inserção | TRANSCRICAO | `[09:52] Larissa` |
-| PRD-NFR-15 | docs/PRD.md | Requisito Não Funcional | Ordenação garantida por pedido apenas com worker único, como limitação conhecida | TRANSCRICAO | `[09:13] Larissa` |
-| PRD-NFR-16 | docs/PRD.md | Restrição | Nenhuma infraestrutura nova, solução restrita ao MySQL existente | TRANSCRICAO | `[09:07] Diego` |
-| PRD-NFR-17 | docs/PRD.md | Restrição | Stack e serviços atuais do ambiente | CODIGO | `docker-compose.yml` |
-| PRD-NFR-18 | docs/PRD.md | Restrição | Portabilidade: MySQL não possui o mecanismo de notificação do Postgres | TRANSCRICAO | `[09:09] Diego` |
-| PRD-NFR-19 | docs/PRD.md | Requisito Não Funcional | Proteção contra requisições para endereços internos (hipótese do autor, não levantada na reunião) | TRANSCRICAO | `[09:23] Sofia` |
-| PRD-ARQ-01 | docs/PRD.md | Decisão | Padrão outbox transacional, com atomicidade entre status e evento | TRANSCRICAO | `[09:06] Diego` |
-| PRD-ARQ-02 | docs/PRD.md | Decisão | Outbox em MySQL registrada como decisão fechada | TRANSCRICAO | `[09:08] Larissa` |
-| PRD-ARQ-03 | docs/PRD.md | Decisão | Worker em processo separado da API | TRANSCRICAO | `[09:11] Diego` |
-| PRD-ARQ-04 | docs/PRD.md | Decisão | PrismaClient próprio no worker, mesmo banco e mesma string de conexão | TRANSCRICAO | `[09:30] Bruno` |
-| PRD-ARQ-05 | docs/PRD.md | Decisão | Função publishWebhookEvent recebendo o transaction client | TRANSCRICAO | `[09:41] Bruno` |
-| PRD-ARQ-06 | docs/PRD.md | Decisão | Função pura recebendo o tx, sem injetar repository inteiro | TRANSCRICAO | `[09:41] Diego` |
-| PRD-ARQ-07 | docs/PRD.md | Restrição | Tipo do transaction client atravessa a fronteira do módulo | CODIGO | `src/modules/orders/order.service.ts` |
-| PRD-ARQ-08 | docs/PRD.md | Decisão | Reuso máximo dos padrões existentes, sem dependência nova | TRANSCRICAO | `[09:30] Larissa` |
-| PRD-ARQ-09 | docs/PRD.md | Restrição | Integração externa única: endpoints HTTPS dos clientes B2B | TRANSCRICAO | `[09:02] Marcos` |
-| PRD-DEC-01 | docs/PRD.md | Trade-off | Outbox amplia a fronteira de uma transação já pesada | TRANSCRICAO | `[09:04] Bruno` |
-| PRD-DEC-02 | docs/PRD.md | Trade-off | Latência mínima de 2 segundos assumida explicitamente | TRANSCRICAO | `[09:10] Larissa` |
-| PRD-DEC-03 | docs/PRD.md | Trade-off | Escala horizontal exigiria particionamento ou lock pessimista | TRANSCRICAO | `[09:13] Diego` |
-| PRD-DEC-04 | docs/PRD.md | Trade-off | Evento pode levar até cerca de 15 horas para ser entregue | TRANSCRICAO | `[09:17] Diego` |
-| PRD-DEC-05 | docs/PRD.md | Trade-off | At-least-once transfere responsabilidade de deduplicação ao cliente | TRANSCRICAO | `[09:25] Sofia` |
-| PRD-DEC-06 | docs/PRD.md | Trade-off | Mitigação do at-least-once é documental, no portal de desenvolvedor | TRANSCRICAO | `[09:26] Marcos` |
-| PRD-DEC-07 | docs/PRD.md | Trade-off | Snapshot duplica dados entre outbox, histórico e DLQ | TRANSCRICAO | `[09:52] Diego` |
-| PRD-DEC-08 | docs/PRD.md | Trade-off | Payload enxuto obriga o cliente a uma chamada extra para obter detalhes | TRANSCRICAO | `[09:43] Diego` |
-| PRD-DEC-09 | docs/PRD.md | Trade-off | Grace period mantém duas secrets simultaneamente válidas por 24 horas | TRANSCRICAO | `[09:21] Sofia` |
-| PRD-DEC-10 | docs/PRD.md | Trade-off | Clientes não pediram ordenação global, o que sustenta a limitação aceita | TRANSCRICAO | `[09:14] Marcos` |
-| PRD-DEP-01 | docs/PRD.md | Dependência | Revisão de segurança sobre HMAC e geração de secret antes do deploy | TRANSCRICAO | `[09:46] Sofia` |
-| PRD-DEP-02 | docs/PRD.md | Dependência | Reforço da revisão de segurança como condição de subida | TRANSCRICAO | `[09:49] Sofia` |
-| PRD-DEP-03 | docs/PRD.md | Dependência | Sessão de revisão do documento de design antes de iniciar a implementação | TRANSCRICAO | `[09:50] Larissa` |
-| PRD-DEP-04 | docs/PRD.md | Dependência | Ordem de construção derivada da estimativa de esforço por sprint | TRANSCRICAO | `[09:46] Larissa` |
-| PRD-DEP-05 | docs/PRD.md | Dependência | Documentação da integração no portal de desenvolvedor | TRANSCRICAO | `[09:40] Marcos` |
-| PRD-DEP-06 | docs/PRD.md | Dependência | Confirmação de prazo e atualização dos clientes | TRANSCRICAO | `[09:47] Marcos` |
-| PRD-DEP-07 | docs/PRD.md | Dependência | Migrations das três tabelas antes do código do worker | TRANSCRICAO | `[09:46] Larissa` |
-| PRD-DEP-08 | docs/PRD.md | Dependência | Schema de variáveis de ambiente precisa ser estendido para o worker (hipótese) | CODIGO | `src/config/env.ts` |
-| PRD-RSK-01 | docs/PRD.md | Risco | Worker único é ponto de falha e teto de throughput | TRANSCRICAO | `[09:12] Diego` |
-| PRD-RSK-02 | docs/PRD.md | Risco | Mecanismo de assinatura durante o grace period não foi definido | TRANSCRICAO | `[09:21] Sofia` |
-| PRD-RSK-03 | docs/PRD.md | Risco | Ausência de isolamento entre customers no CRUD de webhook | TRANSCRICAO | `[09:37] Sofia` |
-| PRD-RSK-03a | docs/PRD.md | Risco | Token não carrega vínculo com customer, o que amplia o risco de isolamento | CODIGO | `src/middlewares/auth.middleware.ts` |
-| PRD-RSK-04 | docs/PRD.md | Risco | Evento preso em processando se o worker morre no meio do envio (lacuna) | TRANSCRICAO | `[09:08] Diego` |
-| PRD-RSK-05 | docs/PRD.md | Risco | Falha definitiva passa despercebida, pois o alerta ao cliente foi adiado | TRANSCRICAO | `[09:37] Larissa` |
-| PRD-RSK-06 | docs/PRD.md | Risco | Prazo comercial com risco de perda de cliente | TRANSCRICAO | `[09:45] Marcos` |
-| PRD-RSK-07 | docs/PRD.md | Risco | Worker sem tratamento de erro de topo (inferência do código) | CODIGO | `src/middlewares/error.middleware.ts` |
-| PRD-RSK-08 | docs/PRD.md | Risco | Cliente pode não implementar deduplicação por identificador de evento | TRANSCRICAO | `[09:25] Sofia` |
-| PRD-RSK-09 | docs/PRD.md | Risco | Crescimento das tabelas sem rotina de arquivamento nesta fase | TRANSCRICAO | `[09:08] Diego` |
-| PRD-RSK-10 | docs/PRD.md | Risco | Insert na outbox pode derrubar a mudança de status | TRANSCRICAO | `[09:41] Diego` |
-| PRD-RSK-11 | docs/PRD.md | Risco | Ausência de limitação de taxa na saída, registrada como ponto em aberto | TRANSCRICAO | `[09:38] Diego` |
-| PRD-RSK-12 | docs/PRD.md | Risco | Ordenação se quebra se uma segunda instância do worker for iniciada | TRANSCRICAO | `[09:13] Larissa` |
-| PRD-TST-01 | docs/PRD.md | Restrição | Runner de teste, execução serial e includes já configurados | CODIGO | `vitest.config.ts` |
-| PRD-TST-02 | docs/PRD.md | Restrição | Padrão vigente de teste de integração de API contra banco real | CODIGO | `tests/orders.test.ts` |
-| PRD-TST-03 | docs/PRD.md | Restrição | Fábricas de dados usadas pelos testes existentes | CODIGO | `tests/helpers` |
-| PRD-TST-04 | docs/PRD.md | Requisito Não Funcional | Teste do rollback da transação quando o insert na outbox falha | TRANSCRICAO | `[09:40] Bruno` |
-| PRD-TST-05 | docs/PRD.md | Requisito Não Funcional | Testes ponta a ponta previstos na estimativa de esforço | TRANSCRICAO | `[09:46] Larissa` |
-| PRD-TST-06 | docs/PRD.md | Requisito Não Funcional | Revisão de segurança como portão de validação obrigatório | TRANSCRICAO | `[09:46] Sofia` |
+| PRD-OBJ-01 | docs/PRD.md | Objetivo | Eliminar dependência de polling caro/lento no `GET /orders`, entregando notificação em até 10s (limiar definido pelos clientes) | TRANSCRICAO | `[09:02] Marcos` |
+| PRD-OBJ-02 | docs/PRD.md | Contexto | Motivação comercial: Atlas Comercial sinalizou risco de migrar para concorrente se a feature não for entregue | TRANSCRICAO | `[09:00] Marcos` |
+| PRD-CTX-01 | docs/PRD.md | Contexto | Público-alvo: clientes B2B integradores (Atlas Comercial, MaxDistribuição, Nova Cargo) | TRANSCRICAO | `[09:00] Marcos` |
+| PRD-CTX-02 | docs/PRD.md | Contexto | Operador interno com papel ADMIN responsável por reprocessar manualmente eventos da dead letter queue | TRANSCRICAO | `[09:36] Larissa` |
+| PRD-CTX-03 | docs/PRD.md | Contexto | Cenário: cliente cadastra endpoint de webhook e recebe notificação em vez de fazer polling | TRANSCRICAO | `[09:31] Marcos` |
+| PRD-CTX-04 | docs/PRD.md | Contexto | Cenário: cliente restringe notificação aos status de interesse, ex. SHIPPED e DELIVERED | TRANSCRICAO | `[09:33] Marcos` |
+| PRD-CTX-05 | docs/PRD.md | Contexto | Cenário: cliente consulta histórico de entregas dos webhooks para auditar sua integração | TRANSCRICAO | `[09:34] Marcos` |
+| PRD-CTX-06 | docs/PRD.md | Contexto | Cenário: operador ADMIN reprocessa manualmente evento que caiu na dead letter queue | TRANSCRICAO | `[09:18] Diego` |
+| PRD-CTX-07 | docs/PRD.md | Contexto | Feature entra como novo módulo `src/modules/webhooks`, seguindo padrão da codebase | TRANSCRICAO | `[09:27] Bruno` |
+| PRD-CTX-08 | docs/PRD.md | Contexto | Alteração no `changeStatus` (update `orders`, insert `order_status_history`, ajuste `stock_quantity`) | CODIGO | `src/modules/orders/order.service.ts` |
+| PRD-CTX-08a | docs/PRD.md | Contexto | Alteração no `changeStatus` de `order.service.ts` como ponto de integração, confirmada em reunião | TRANSCRICAO | `[09:40] Bruno` |
+| PRD-CTX-09 | docs/PRD.md | Contexto | Worker roda como processo separado, com entry point próprio ao lado do `src/server.ts` | TRANSCRICAO | `[09:11] Larissa` |
+| PRD-PROB-01 | docs/PRD.md | Problema | Polling no `GET /orders` deixa integração lenta, sem aviso de mudança; prioridade alta (hipótese) | TRANSCRICAO | `[09:00] Marcos` |
+| PRD-PROB-02 | docs/PRD.md | Problema | Polling é caro para o cliente, requisições repetidas sem garantia de mudança; prioridade alta (hipótese) | TRANSCRICAO | `[09:00] Marcos` |
+| PRD-PROB-03 | docs/PRD.md | Contexto | Não existe número medido de custo, volume de polling ou tempo perdido; fonte só traz impacto qualitativo e risco comercial | TRANSCRICAO | `[09:00] Marcos` |
+| PRD-MET-01 | docs/PRD.md | Requisito Não Funcional | Meta: notificação em menos de 10s entre commit da mudança de status e chegada no endpoint do cliente | TRANSCRICAO | `[09:02] Marcos` |
+| PRD-MET-02 | docs/PRD.md | Requisito Não Funcional | Meta: 5 tentativas de entrega cobrindo cerca de 15h de backoff | TRANSCRICAO | `[09:17] Diego` |
+| PRD-MET-03 | docs/PRD.md | Requisito Não Funcional | Meta: 100% de eventos gravados na outbox garantido por transação | TRANSCRICAO | `[09:06] Diego` |
+| PRD-MET-04 | docs/PRD.md | Restrição | Meta: entregar a feature sem provisionar infraestrutura nova (zero novos componentes) | TRANSCRICAO | `[09:07] Diego` |
+| PRD-ESC-01 | docs/PRD.md | Escopo | Tabela `webhook_outbox` no MySQL, populada na mesma transação do `changeStatus` | TRANSCRICAO | `[09:06] Diego` |
+| PRD-ESC-02 | docs/PRD.md | Escopo | Função `publishWebhookEvent(tx, order, fromStatus, toStatus)` chamada pelo `order.service.ts` com client da transação | TRANSCRICAO | `[09:41] Bruno` |
+| PRD-ESC-03 | docs/PRD.md | Escopo | Filtro de status de interesse por webhook, aplicado na inserção na outbox | TRANSCRICAO | `[09:34] Bruno` |
+| PRD-ESC-04a | docs/PRD.md | Escopo | Worker em processo separado, em polling a cada 2s sobre eventos pendentes mais antigos | TRANSCRICAO | `[09:09] Diego` |
+| PRD-ESC-04b | docs/PRD.md | Escopo | Worker com PrismaClient próprio, separado do processo da API | TRANSCRICAO | `[09:30] Bruno` |
+| PRD-ESC-05 | docs/PRD.md | Escopo | Montagem/envio do payload JSON com headers padronizados, timeout de 10s por requisição | TRANSCRICAO | `[09:42] Diego` |
+| PRD-ESC-06 | docs/PRD.md | Escopo | Retry com backoff exponencial 1min/5min/30min/2h/12h, totalizando 5 tentativas | TRANSCRICAO | `[09:17] Diego` |
+| PRD-ESC-07 | docs/PRD.md | Escopo | Tabela `webhook_dead_letter` separada, com payload, motivo da falha e timestamp | TRANSCRICAO | `[09:18] Diego` |
+| PRD-ESC-08a | docs/PRD.md | Escopo | Endpoint administrativo `POST /admin/webhooks/dead-letter/:id/replay` | TRANSCRICAO | `[09:18] Diego` |
+| PRD-ESC-08b | docs/PRD.md | Escopo | Endpoint de replay restrito ao papel ADMIN | TRANSCRICAO | `[09:36] Larissa` |
+| PRD-ESC-08c | docs/PRD.md | Escopo | Replay administrativo com log de auditoria de quem executou | TRANSCRICAO | `[09:36] Sofia` |
+| PRD-ESC-09a | docs/PRD.md | Escopo | Assinatura HMAC-SHA256 do corpo da requisição | TRANSCRICAO | `[09:20] Sofia` |
+| PRD-ESC-09b | docs/PRD.md | Escopo | Secret única por endpoint, gerada pela plataforma (não secret global) | TRANSCRICAO | `[09:21] Sofia` |
+| PRD-ESC-10 | docs/PRD.md | Escopo | Rotação de secret pela API, com secret anterior válida por 24h | TRANSCRICAO | `[09:21] Sofia` |
+| PRD-ESC-11 | docs/PRD.md | Escopo | Validação de URL obrigatoriamente HTTPS via schema Zod | TRANSCRICAO | `[09:23] Sofia` |
+| PRD-ESC-12 | docs/PRD.md | Escopo | Limite de payload de 64 KB, com erro quando ultrapassado | TRANSCRICAO | `[09:24] Diego` |
+| PRD-ESC-13 | docs/PRD.md | Escopo | Entrega at-least-once com `X-Event-Id` em UUID para deduplicação pelo cliente | TRANSCRICAO | `[09:25] Diego` |
+| PRD-ESC-14 | docs/PRD.md | Escopo | CRUD de configuração de webhook, autenticado com o JWT já existente | TRANSCRICAO | `[09:32] Marcos` |
+| PRD-ESC-15 | docs/PRD.md | Escopo | Consulta dos últimos 100 registros de entrega, com status, payload, resposta e tempo de resposta | TRANSCRICAO | `[09:34] Marcos` |
+| PRD-ESC-16a | docs/PRD.md | Escopo | Módulo `src/modules/webhooks` reusando `AppError` e prefixo de erro `WEBHOOK_` | TRANSCRICAO | `[09:28] Bruno` |
+| PRD-ESC-16b | docs/PRD.md | Escopo | Módulo reusando logger Pino e error middleware já existentes | TRANSCRICAO | `[09:29] Bruno` |
+| PRD-FESC-01 | docs/PRD.md | Fora de escopo | Notificação por e-mail quando webhook falha repetidamente, adiado para fase seguinte | TRANSCRICAO | `[09:37] Larissa` |
+| PRD-FESC-02 | docs/PRD.md | Fora de escopo | Dashboard visual para o cliente, adiado por ser projeto separado do frontend | TRANSCRICAO | `[09:40] Larissa` |
+| PRD-FESC-03 | docs/PRD.md | Fora de escopo | Arquivamento das linhas entregues da outbox após cerca de 30 dias, reconhecido como necessário mas fora da entrega | TRANSCRICAO | `[09:08] Diego` |
+| PRD-FESC-04 | docs/PRD.md | Fora de escopo | Escala para múltiplos workers, com particionamento por `order_id` ou lock pessimista, adiado | TRANSCRICAO | `[09:13] Diego` |
+| PRD-FESC-05 | docs/PRD.md | Fora de escopo | Endurecimento das permissões do CRUD de webhook, hoje aberto a qualquer papel autenticado, adiado | TRANSCRICAO | `[09:37] Sofia` |
+| PRD-FESC-06 | docs/PRD.md | Fora de escopo | Webhook síncrono dentro da transação, descartado por travar mudança de status e não haver critério de rollback | TRANSCRICAO | `[09:04] Bruno` |
+| PRD-FESC-07 | docs/PRD.md | Fora de escopo | Fila Redis Streams no lugar da outbox, descartada por exigir infraestrutura nova/overengineering | TRANSCRICAO | `[09:07] Diego` |
+| PRD-FESC-08 | docs/PRD.md | Fora de escopo | Trigger de banco para acionar worker, descartada porque MySQL não notifica processo externo | TRANSCRICAO | `[09:09] Diego` |
+| PRD-FESC-09 | docs/PRD.md | Fora de escopo | Retry com 3 tentativas em janela curta, descartado por matar evento durante indisponibilidade planejada | TRANSCRICAO | `[09:16] Diego` |
+| PRD-FESC-10 | docs/PRD.md | Fora de escopo | Retry indefinido, descartado por deixar evento pendurado para sempre | TRANSCRICAO | `[09:15] Diego` |
+| PRD-FESC-11 | docs/PRD.md | Fora de escopo | Truncamento do payload acima de 64 KB, descartado em favor de erro explícito | TRANSCRICAO | `[09:23] Sofia` |
+| PRD-FESC-12 | docs/PRD.md | Fora de escopo | Dead letter como campo de estado na outbox, descartada em favor de tabela separada | TRANSCRICAO | `[09:18] Diego` |
+| PRD-OPEN-01 | docs/PRD.md | Risco | Rate limiting de envio de webhooks quando muitos eventos disparam em pouco tempo, sem decisão ("observar e decidir depois") | TRANSCRICAO | `[09:39] Larissa` |
+| PRD-OPEN-02 | docs/PRD.md | Dependência | Qual secret o worker usa para assinar durante o grace period de 24h não foi definida | TRANSCRICAO | `[09:21] Sofia` |
+| PRD-OPEN-05 | docs/PRD.md | Contexto | Ambiguidade se os 5 intervalos de backoff correspondem a 5 tentativas com 4 esperas ou a 1 tentativa + 5 reagendamentos, não resolvida na reunião | TRANSCRICAO | `[09:17] Diego` |
+| PRD-FR-01a | docs/PRD.md | Requisito Funcional | RF-01: `POST /webhooks` com URL, status de interesse e `customer_id` no corpo; secret gerada e devolvida na criação | TRANSCRICAO | `[09:31] Marcos` |
+| PRD-FR-01b | docs/PRD.md | Requisito Funcional | RF-01: `GET` lista, `PATCH` edita URL/status/estado ativo, `DELETE` remove | TRANSCRICAO | `[09:33] Bruno` |
+| PRD-FR-01c | docs/PRD.md | Requisito Funcional | RF-01: URL em HTTP recusada na validação do schema, só HTTPS aceito | TRANSCRICAO | `[09:23] Sofia` |
+| PRD-FR-01d | docs/PRD.md | Requisito Funcional | RF-01: CRUD aceita qualquer papel autenticado nesta entrega, sem restrição por papel | TRANSCRICAO | `[09:37] Sofia` |
+| PRD-FR-01e | docs/PRD.md | Requisito Funcional | RF-01: `customer_id` vem do corpo/path, não do JWT (JWT é do usuário operador) | TRANSCRICAO | `[09:32] Larissa` |
+| PRD-FR-01f | docs/PRD.md | Decisão | RF-01: prioridade alta (hipótese, prioridade não classificada formalmente pela fonte) | TRANSCRICAO | `[09:31] Larissa` |
+| PRD-FR-02a | docs/PRD.md | Requisito Funcional | RF-02: cliente solicita rotação, nova secret gerada, anterior válida 24h em paralelo, nova devolvida na resposta | TRANSCRICAO | `[09:21] Sofia` |
+| PRD-FR-02b | docs/PRD.md | Contexto | RF-02: qual secret é usada para assinar durante o grace period não foi definida pela fonte | TRANSCRICAO | `[09:21] Sofia` |
+| PRD-FR-02c | docs/PRD.md | Decisão | RF-02: prioridade alta (hipótese) | TRANSCRICAO | `[09:31] Larissa` |
+| PRD-FR-03a | docs/PRD.md | Requisito Funcional | RF-03: `changeStatus` abre transação, executa update `orders`/insert `order_status_history`/ajuste estoque já existentes | CODIGO | `src/modules/orders/order.service.ts` |
+| PRD-FR-03b | docs/PRD.md | Requisito Funcional | RF-03: service chama `publishWebhookEvent(tx, order, fromStatus, toStatus)` com client da transação | TRANSCRICAO | `[09:41] Bruno` |
+| PRD-FR-03c | docs/PRD.md | Requisito Funcional | RF-03: payload renderizado como snapshot no momento da inserção, não recalculado no envio | TRANSCRICAO | `[09:52] Larissa` |
+| PRD-FR-03d | docs/PRD.md | Requisito Funcional | RF-03: se nenhum webhook inscrito no status, nada é inserido, comportamento esperado | TRANSCRICAO | `[09:34] Bruno` |
+| PRD-FR-03e | docs/PRD.md | Requisito Funcional | RF-03: falha na inserção causa rollback de toda a transação, incluindo a mudança de status | TRANSCRICAO | `[09:40] Bruno` |
+| PRD-FR-03f | docs/PRD.md | Decisão | RF-03: prioridade alta (hipótese) | TRANSCRICAO | `[09:31] Larissa` |
+| PRD-FR-04a | docs/PRD.md | Requisito Funcional | RF-04: worker consulta a cada 2s eventos pendentes ordenados por `created_at`, em lotes pequenos | TRANSCRICAO | `[09:09] Diego` |
+| PRD-FR-04b | docs/PRD.md | Requisito Funcional | RF-04: payload com `event_id`, `event_type` `order.status_changed`, `timestamp` ISO 8601, `order_id`, `order_number`, `from_status`, `to_status`, `customer_id`, `total_cents`, sem itens | TRANSCRICAO | `[09:43] Diego` |
+| PRD-FR-04c1 | docs/PRD.md | Requisito Funcional | RF-04: headers `X-Event-Id`, `X-Signature`, `X-Timestamp`, `Content-Type: application/json` | TRANSCRICAO | `[09:44] Diego` |
+| PRD-FR-04c2 | docs/PRD.md | Requisito Funcional | RF-04: header `X-Webhook-Id` com o id do endpoint webhook | TRANSCRICAO | `[09:44] Sofia` |
+| PRD-FR-04d | docs/PRD.md | Requisito Não Funcional | RF-04: timeout de 10s por requisição | TRANSCRICAO | `[09:42] Diego` |
+| PRD-FR-04e | docs/PRD.md | Requisito Funcional | RF-04: payload acima de 64 KB não é enviado, erro registrado sem truncamento | TRANSCRICAO | `[09:23] Sofia` |
+| PRD-FR-04f | docs/PRD.md | Requisito Funcional | RF-04: entrega at-least-once, cliente deduplica pelo `X-Event-Id` | TRANSCRICAO | `[09:25] Diego` |
+| PRD-FR-04g | docs/PRD.md | Decisão | RF-04: prioridade alta (hipótese) | TRANSCRICAO | `[09:31] Larissa` |
+| PRD-FR-05a | docs/PRD.md | Requisito Funcional | RF-05: backoff 1min/5min/30min/2h/12h, 5 tentativas | TRANSCRICAO | `[09:17] Diego` |
+| PRD-FR-05b | docs/PRD.md | Requisito Funcional | RF-05: falhando a 5ª tentativa, evento movido para `webhook_dead_letter` com payload, motivo e timestamp | TRANSCRICAO | `[09:18] Diego` |
+| PRD-FR-05d | docs/PRD.md | Decisão | RF-05: prioridade alta (hipótese) | TRANSCRICAO | `[09:31] Larissa` |
+| PRD-FR-06a | docs/PRD.md | Requisito Funcional | RF-06: secret única por endpoint (não global) gerada no cadastro | TRANSCRICAO | `[09:21] Sofia` |
+| PRD-FR-06b | docs/PRD.md | Requisito Funcional | RF-06: worker calcula HMAC-SHA256 sobre o corpo com a secret ativa, envia em `X-Signature` | TRANSCRICAO | `[09:20] Sofia` |
+| PRD-FR-06c | docs/PRD.md | Decisão | RF-06: prioridade alta (hipótese) | TRANSCRICAO | `[09:31] Larissa` |
+| PRD-FR-07a | docs/PRD.md | Requisito Funcional | RF-07: `POST /admin/webhooks/dead-letter/:id/replay` recoloca evento como pendente na outbox | TRANSCRICAO | `[09:35] Diego` |
+| PRD-FR-07b | docs/PRD.md | Requisito Funcional | RF-07: middleware `requireRole` restringe o acesso ao papel ADMIN | TRANSCRICAO | `[09:36] Larissa` |
+| PRD-FR-07b-cod | docs/PRD.md | Requisito Funcional | RF-07: `requireRole` já existe no código | CODIGO | `src/middlewares/auth.middleware.ts` |
+| PRD-FR-07c | docs/PRD.md | Requisito Funcional | RF-07: execução do replay registrada em log identificando quem executou | TRANSCRICAO | `[09:36] Sofia` |
+| PRD-FR-07d | docs/PRD.md | Decisão | RF-07: prioridade média (hipótese) | TRANSCRICAO | `[09:31] Larissa` |
+| PRD-FR-08a | docs/PRD.md | Requisito Funcional | RF-08: `GET /webhooks/:id/deliveries` retorna últimos 100 registros com sucesso/falha, payload, resposta, tempo de resposta | TRANSCRICAO | `[09:34] Marcos` |
+| PRD-FR-08b | docs/PRD.md | Decisão | RF-08: prioridade média (hipótese) | TRANSCRICAO | `[09:31] Larissa` |
+| PRD-NFR-PERF-01 | docs/PRD.md | Requisito Não Funcional | Latência de entrega menor que 10s, limiar definido pelos clientes | TRANSCRICAO | `[09:02] Marcos` |
+| PRD-NFR-PERF-02 | docs/PRD.md | Requisito Não Funcional | Intervalo de polling do worker de 2s, pior caso de latência de disparo | TRANSCRICAO | `[09:09] Diego` |
+| PRD-NFR-PERF-03 | docs/PRD.md | Requisito Não Funcional | Timeout de 10s por requisição HTTP ao endpoint do cliente | TRANSCRICAO | `[09:42] Diego` |
+| PRD-NFR-PERF-04 | docs/PRD.md | Requisito Não Funcional | Limite de payload de 64 KB por evento | TRANSCRICAO | `[09:24] Diego` |
+| PRD-NFR-PERF-05 | docs/PRD.md | Requisito Não Funcional | Worker processa eventos pendentes em lotes pequenos; tamanho exato não definido pela fonte | TRANSCRICAO | `[09:08] Diego` |
+| PRD-NFR-DISP-02 | docs/PRD.md | Requisito Não Funcional | Worker roda em processo separado da API para não ser derrubado quando a API reinicia | TRANSCRICAO | `[09:11] Diego` |
+| PRD-NFR-DISP-03 | docs/PRD.md | Contexto | Comportamento esperado se o worker parar por completo (restart, health check, alerta) não definido (hipótese) | TRANSCRICAO | `[09:11] Diego` |
+| PRD-NFR-SEG-01 | docs/PRD.md | Requisito Não Funcional | Autenticação por JWT do próprio sistema, mesmo padrão da API | TRANSCRICAO | `[09:32] Marcos` |
+| PRD-NFR-SEG-02 | docs/PRD.md | Requisito Funcional | CRUD de configuração aceita qualquer papel autenticado, condição provisória | TRANSCRICAO | `[09:37] Sofia` |
+| PRD-NFR-SEG-03 | docs/PRD.md | Requisito Não Funcional | Replay exige o papel ADMIN, aplicado pelo middleware `requireRole` | TRANSCRICAO | `[09:36] Larissa` |
+| PRD-NFR-SEG-04 | docs/PRD.md | Requisito Não Funcional | Secret única por endpoint, gerada pela plataforma, rotacionável, anterior válida 24h | TRANSCRICAO | `[09:21] Sofia` |
+| PRD-NFR-SEG-05 | docs/PRD.md | Requisito Não Funcional | Assinatura HMAC-SHA256 sobre o corpo da requisição, transmitida em `X-Signature` | TRANSCRICAO | `[09:20] Sofia` |
+| PRD-NFR-SEG-06 | docs/PRD.md | Requisito Não Funcional | URL do webhook obrigatoriamente HTTPS, validada por schema Zod, recusa em HTTP | TRANSCRICAO | `[09:23] Sofia` |
+| PRD-NFR-SEG-07 | docs/PRD.md | Requisito Não Funcional | Log de auditoria identificando quem executou o replay administrativo | TRANSCRICAO | `[09:36] Sofia` |
+| PRD-NFR-SEG-08 | docs/PRD.md | Dependência | Revisão de segurança do código antes do deploy, pelo menos 2 dias úteis, focada em HMAC e geração de secret | TRANSCRICAO | `[09:46] Sofia` |
+| PRD-NFR-OBS-01 | docs/PRD.md | Requisito Não Funcional | Logging pelo Pino já presente no projeto, sem introduzir ferramenta nova | TRANSCRICAO | `[09:29] Bruno` |
+| PRD-NFR-OBS-02 | docs/PRD.md | Requisito Funcional | Histórico de entregas exposto ao cliente (resultado, payload, resposta, tempo de resposta) dos últimos 100 envios | TRANSCRICAO | `[09:34] Marcos` |
+| PRD-NFR-CONF-01 | docs/PRD.md | Requisito Não Funcional | Inserção do evento na outbox na mesma transação SQL da mudança de status, com rollback conjunto | TRANSCRICAO | `[09:06] Diego` |
+| PRD-NFR-CONF-02 | docs/PRD.md | Requisito Não Funcional | Garantia de entrega at-least-once, e não exactly-once | TRANSCRICAO | `[09:25] Diego` |
+| PRD-NFR-CONF-03 | docs/PRD.md | Requisito Não Funcional | Deduplicação de responsabilidade do cliente, com base no `X-Event-Id` em UUID | TRANSCRICAO | `[09:25] Diego` |
+| PRD-NFR-CONF-04 | docs/PRD.md | Restrição | Ordenação garantida por `order_id` apenas com worker único; sem garantia de ordenação global | TRANSCRICAO | `[09:12] Diego` |
+| PRD-NFR-CONF-05 | docs/PRD.md | Requisito Não Funcional | Payload gravado como snapshot no momento da inserção na outbox, não recalculado no envio | TRANSCRICAO | `[09:52] Larissa` |
+| PRD-NFR-CONF-06 | docs/PRD.md | Requisito Não Funcional | Identificadores em UUID, seguindo o padrão do restante do projeto | TRANSCRICAO | `[09:51] Larissa` |
+| PRD-NFR-COMPAT-01 | docs/PRD.md | Requisito Não Funcional | Payload em JSON com campos fixos, `timestamp` em ISO 8601 e `Content-Type: application/json` | TRANSCRICAO | `[09:43] Diego` |
+| PRD-NFR-COMPAT-02 | docs/PRD.md | Requisito Não Funcional | Worker como entry point Node separado, mesma stack, com instância própria de PrismaClient, mesmo banco | TRANSCRICAO | `[09:30] Bruno` |
+| PRD-NFR-COMPAT-03 | docs/PRD.md | Requisito Não Funcional | Nenhuma comunicação direta entre API e worker, que se sincronizam apenas pelo banco | TRANSCRICAO | `[09:11] Diego` |
+| PRD-NFR-COMPL-01 | docs/PRD.md | Requisito Não Funcional | Trilha de auditoria do replay administrativo, registrando quem executou a ação | TRANSCRICAO | `[09:36] Sofia` |
+| PRD-NFR-COMPL-02 | docs/PRD.md | Fora de escopo | Arquivamento das linhas entregues da outbox após cerca de 30 dias, reconhecido como necessário mas fora desta entrega | TRANSCRICAO | `[09:08] Diego` |
+| PRD-ARQ-01 | docs/PRD.md | Decisão | Transactional outbox + worker separado + HTTP com retry/backoff/DLQ/HMAC, evitando disparo síncrono e infra nova | TRANSCRICAO | `[09:06] Diego` |
+| PRD-ARQ-02 | docs/PRD.md | Contexto | Tabela `webhook_outbox` com payload snapshot, estado, `created_at`, `order_id`, índices sobre estado e data | TRANSCRICAO | `[09:08] Diego` |
+| PRD-ARQ-03 | docs/PRD.md | Contexto | Função `publishWebhookEvent` recebe client da transação, aplica filtro de status, insere o evento | TRANSCRICAO | `[09:41] Bruno` |
+| PRD-ARQ-04 | docs/PRD.md | Contexto | `OrderService.changeStatus` passa a chamar a publicação do evento dentro da própria transação | CODIGO | `src/modules/orders/order.service.ts` |
+| PRD-ARQ-05 | docs/PRD.md | Contexto | Módulo `src/modules/webhooks` com controller, service, repository, routes e schemas | TRANSCRICAO | `[09:27] Bruno` |
+| PRD-ARQ-06 | docs/PRD.md | Contexto | Worker em processo Node separado, com entry point próprio e script dedicado | TRANSCRICAO | `[09:11] Larissa` |
+| PRD-ARQ-07 | docs/PRD.md | Contexto | Tabela `webhook_dead_letter`, com payload, motivo da falha e timestamp | TRANSCRICAO | `[09:18] Diego` |
+| PRD-ARQ-08 | docs/PRD.md | Contexto | Endpoint administrativo de replay, restrito ao papel ADMIN | TRANSCRICAO | `[09:36] Larissa` |
+| PRD-ARQ-09 | docs/PRD.md | Contexto | Componentes reaproveitados sem alteração: `AppError`, prefixo `WEBHOOK_`, Pino, error middleware, `requireRole` | TRANSCRICAO | `[09:30] Larissa` |
+| PRD-ARQ-09-cod | docs/PRD.md | Contexto | `AppError` e `requireRole` existentes na codebase | CODIGO | `src/shared/errors/app-error.ts` |
+| PRD-ARQ-10 | docs/PRD.md | Contexto | Mudança de status para outbox, por transação de banco, sem chamada HTTP intermediária | TRANSCRICAO | `[09:06] Diego` |
+| PRD-ARQ-11 | docs/PRD.md | Contexto | Worker para banco de dados, por consultas SQL via Prisma a cada 2s, com instância própria de PrismaClient | TRANSCRICAO | `[09:30] Bruno` |
+| PRD-ARQ-12 | docs/PRD.md | Contexto | Worker para endpoint do cliente por HTTP POST com timeout de 10s; única integração externa, exclusivamente outbound | TRANSCRICAO | `[09:03] Sofia` |
+| PRD-ARQ-13 | docs/PRD.md | Contexto | Cliente para plataforma por endpoints REST autenticados com JWT, para configuração, rotação de secret e consulta de entregas | TRANSCRICAO | `[09:32] Larissa` |
+| PRD-ARQ-15 | docs/PRD.md | Contexto | Estratégia de assinatura durante o grace period de rotação de secret ainda não fechada | TRANSCRICAO | `[09:21] Sofia` |
+| PRD-DEC-01 | docs/PRD.md | Decisão | Adotar transactional outbox no MySQL, em vez de disparo síncrono ou fila dedicada | TRANSCRICAO | `[09:06] Diego` |
+| PRD-DEC-01-TO | docs/PRD.md | Trade-off | Acopla gravação do evento a uma transação já pesada, em troca de consistência forte entre status e evento | TRANSCRICAO | `[09:04] Bruno` |
+| PRD-DEC-02 | docs/PRD.md | Decisão | Worker executado como processo separado da API | TRANSCRICAO | `[09:11] Diego` |
+| PRD-DEC-02-TO | docs/PRD.md | Trade-off | Exige entry point e ciclo de deploy adicionais, gerenciamento de um segundo processo | TRANSCRICAO | `[09:11] Larissa` |
+| PRD-DEC-03 | docs/PRD.md | Decisão | Worker em polling a cada 2s, sem mecanismo reativo | TRANSCRICAO | `[09:09] Diego` |
+| PRD-DEC-03-TO | docs/PRD.md | Trade-off | Latência mínima de disparo passa a ser 2s no pior caso, custo aceito explicitamente | TRANSCRICAO | `[09:10] Larissa` |
+| PRD-DEC-04 | docs/PRD.md | Decisão | HMAC-SHA256 com secret única por endpoint e rotação com grace period de 24h | TRANSCRICAO | `[09:22] Sofia` |
+| PRD-DEC-04-TO | docs/PRD.md | Trade-off | Aumenta a complexidade de gestão de secrets e torna a assinatura um contrato difícil de alterar depois | TRANSCRICAO | `[09:21] Sofia` |
+| PRD-DEC-05 | docs/PRD.md | Decisão | Garantia de entrega at-least-once, com deduplicação a cargo do cliente | TRANSCRICAO | `[09:25] Diego` |
+| PRD-DEC-05-TO | docs/PRD.md | Trade-off | Transfere ao cliente a responsabilidade de deduplicar; cliente sem isso processa evento em duplicidade | TRANSCRICAO | `[09:25] Sofia` |
+| PRD-DEC-06 | docs/PRD.md | Decisão | Ordenação garantida apenas por `order_id` e apenas em regime de worker único | TRANSCRICAO | `[09:12] Diego` |
+| PRD-DEC-06-TO | docs/PRD.md | Trade-off | Garantia se perde ao escalar para múltiplos workers, exigindo particionamento ou lock pessimista | TRANSCRICAO | `[09:13] Diego` |
+| PRD-DEC-07 | docs/PRD.md | Decisão | 5 tentativas de entrega com backoff exponencial de 1 minuto a 12 horas | TRANSCRICAO | `[09:17] Diego` |
+| PRD-DEC-07-TO | docs/PRD.md | Trade-off | Evento pode levar até cerca de 15h para ser considerado perdido; número de tentativas já contestado internamente | TRANSCRICAO | `[09:16] Bruno` |
+| PRD-DEC-08 | docs/PRD.md | Decisão | CRUD de configuração de webhook aberto a qualquer papel autenticado, com ADMIN exigido apenas no replay | TRANSCRICAO | `[09:36] Larissa` |
+| PRD-DEC-08-TO | docs/PRD.md | Trade-off | Qualquer usuário autenticado pode alterar o destino dos webhooks de um customer; permissão registrada como provisória | TRANSCRICAO | `[09:37] Sofia` |
+| PRD-DEP-01 | docs/PRD.md | Dependência | Revisão de segurança antes do deploy, ao menos 2 dias úteis, foco em HMAC e geração de secrets | TRANSCRICAO | `[09:46] Sofia` |
+| PRD-DEP-02 | docs/PRD.md | Dependência | Revisão do documento de design com o time de engenharia antes da implementação | TRANSCRICAO | `[09:50] Larissa` |
+| PRD-DEP-03 | docs/PRD.md | Dependência | Comunicação e documentação aos clientes sobre prazo e comportamento at-least-once/deduplicação | TRANSCRICAO | `[09:26] Marcos` |
+| PRD-DEP-04 | docs/PRD.md | Dependência | Nenhuma infraestrutura nova necessária; reaproveita MySQL/Prisma, `AppError`, error middleware, Pino, `requireRole` | TRANSCRICAO | `[09:07] Diego` |
+| PRD-DEP-05 | docs/PRD.md | Dependência | Cliente precisa expor endpoint HTTPS, verificar HMAC, deduplicar por `X-Event-Id` e migrar secret em até 24h | TRANSCRICAO | `[09:25] Diego` |
+| PRD-RISK-01 | docs/PRD.md | Risco | Endpoint do cliente indisponível/lento esgota as tentativas e o evento não é entregue; probabilidade média (hipótese) | TRANSCRICAO | `[09:15] Diego` |
+| PRD-RISK-01-MIT | docs/PRD.md | Risco | Mitigação: retry com backoff cobrindo ~15h e timeout de 10s por tentativa | TRANSCRICAO | `[09:17] Diego` |
+| PRD-RISK-01-PC | docs/PRD.md | Risco | Contingência: evento preservado na DLQ, reprocessável via replay administrativo | TRANSCRICAO | `[09:18] Diego` |
+| PRD-RISK-02 | docs/PRD.md | Risco | Vazamento da secret de um cliente permite forjar eventos assinados; probabilidade média (hipótese) | TRANSCRICAO | `[09:22] Diego` |
+| PRD-RISK-02-MIT | docs/PRD.md | Risco | Mitigação: secret única por endpoint, rotação pela API, revisão de segurança antes do deploy | TRANSCRICAO | `[09:21] Sofia` |
+| PRD-RISK-02-PC | docs/PRD.md | Risco | Contingência: cliente solicita rotação; secret comprometida invalida ao fim das 24h de transição | TRANSCRICAO | `[09:21] Sofia` |
+| PRD-RISK-03 | docs/PRD.md | Risco | Escalar para múltiplos workers quebra a ordenação de eventos do mesmo pedido; probabilidade baixa (hipótese) | TRANSCRICAO | `[09:12] Diego` |
+| PRD-RISK-03-MIT | docs/PRD.md | Risco | Mitigação: manter regime de worker único nesta entrega, documentar ausência de ordenação global | TRANSCRICAO | `[09:13] Larissa` |
+| PRD-RISK-03-PC | docs/PRD.md | Risco | Contingência: implementar particionamento por `order_id` ou lock pessimista antes de segundo worker | TRANSCRICAO | `[09:13] Diego` |
+| PRD-RISK-04 | docs/PRD.md | Risco | Volume alto de mudanças de status sobrecarrega o endpoint do cliente; probabilidade média (hipótese) | TRANSCRICAO | `[09:38] Diego` |
+| PRD-RISK-04-MIT | docs/PRD.md | Risco | Mitigação: nenhuma implementada nesta entrega; decisão de observar o comportamento em produção | TRANSCRICAO | `[09:39] Larissa` |
+| PRD-RISK-05 | docs/PRD.md | Risco | Cliente que não implementa deduplicação processa o mesmo evento mais de uma vez; probabilidade média (hipótese) | TRANSCRICAO | `[09:25] Sofia` |
+| PRD-RISK-05-MIT | docs/PRD.md | Risco | Mitigação: `X-Event-Id` em UUID único por evento e documentação da garantia at-least-once | TRANSCRICAO | `[09:26] Marcos` |
+| PRD-RISK-05-PC | docs/PRD.md | Risco | Contingência: sem ação corretiva da plataforma além de documentação e suporte; risco residual aceito conscientemente | TRANSCRICAO | `[09:25] Diego` |
+| PRD-RISK-06 | docs/PRD.md | Risco | Falha na inserção do evento na outbox impede a mudança de status do pedido; probabilidade baixa (hipótese) | TRANSCRICAO | `[09:40] Bruno` |
+| PRD-RISK-06-MIT | docs/PRD.md | Risco | Mitigação: inserção do evento na mesma transação SQL, com rollback conjunto; payload como snapshot | TRANSCRICAO | `[09:41] Diego` |
+| PRD-TEST-01 | docs/PRD.md | Requisito Não Funcional | Testes de integração ponta a ponta com Vitest e Supertest, sem mock de banco (hipótese, matriz não definida pela fonte) | CODIGO | `tests/orders.test.ts` |
+| PRD-TEST-02 | docs/PRD.md | Requisito Não Funcional | Teste de publicação do evento na outbox via `changeStatus`, incluindo rollback e caso sem webhook inscrito (hipótese) | CODIGO | `src/modules/orders/order.service.ts` |
+| PRD-TEST-03 | docs/PRD.md | Requisito Não Funcional | Teste de entrega verificando headers, corpo do payload e recálculo da assinatura HMAC-SHA256 (hipótese) | TRANSCRICAO | `[09:20] Sofia` |
+| PRD-TEST-04 | docs/PRD.md | Requisito Não Funcional | Teste do ciclo de retry, do backoff e da movimentação para a dead letter queue (hipótese) | TRANSCRICAO | `[09:17] Diego` |
+| PRD-TEST-05 | docs/PRD.md | Requisito Não Funcional | Teste de autorização do endpoint de replay administrativo (ADMIN e recusa sem esse papel) (hipótese) | TRANSCRICAO | `[09:36] Larissa` |
+| PRD-TEST-06 | docs/PRD.md | Requisito Não Funcional | Convenção de teste do projeto: sobe a aplicação, popula por factories, valida status/corpo, limpeza de tabelas antes de cada execução | CODIGO | `tests/helpers/factories.ts` |
+| PRD-TEST-07 | docs/PRD.md | Requisito Não Funcional | Teste do worker via função de processamento de lote testável isoladamente, em vez do loop completo (inferência de arquitetura, não decisão explícita da fonte) | TRANSCRICAO | `[09:09] Diego` |
+| PRD-TEST-08 | docs/PRD.md | Dependência | Portão de aprovação obrigatório antes do deploy: revisão de segurança, 2 dias úteis, foco em HMAC e geração de secrets | TRANSCRICAO | `[09:46] Sofia` |

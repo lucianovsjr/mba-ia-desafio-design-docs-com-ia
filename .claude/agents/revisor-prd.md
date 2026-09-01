@@ -33,8 +33,10 @@ transcrição ou no código. Classifique:
 - `DERIVADO` quando for inferência razoável mas não literal
 
 **4. Regras de estilo** — sem travessão "—", sem perguntas duplas remanescentes,
-sem seções proibidas (anexos, referências, stakeholders, próximos passos, datas
-e prazos), sem campos vazios.
+sem seções proibidas (anexos, referências, stakeholders, próximos passos,
+cronograma, prazos e marcos de entrega), sem campos vazios. A data do cabeçalho
+é permitida e não conta como prazo. Nenhum placeholder entre colchetes pode
+sobrar no documento final.
 
 **5. Contradições** — fora de escopo que contradiz o incluso; arquitetura que não
 sustenta os requisitos não funcionais declarados.

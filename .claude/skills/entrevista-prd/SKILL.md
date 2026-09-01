@@ -35,13 +35,18 @@ Loop de execução:
 2. Nas etapas seguintes, continue **sempre** com `SendMessage` para
    `po-entrevistado`. Nunca abra um novo `Agent`: um spawn novo perde o histórico
    e o entrevistado passa a se contradizer entre etapas.
-3. Agrupe as perguntas **por etapa** do Processo de Entrevista, não uma a uma.
+3. O cabeçalho do PRD é a exceção. Responsável e versão são metadados do
+   documento, não da feature, e não existem na transcrição nem no código.
+   Pergunte esses dois ao **usuário humano**, nunca ao `po-entrevistado`, que
+   responderia com um nome da reunião ou com um default marcado como hipótese.
+   Produto e nome da feature podem vir da transcrição normalmente.
+4. Agrupe as perguntas **por etapa** do Processo de Entrevista, não uma a uma.
    São 12 mensagens em vez de cerca de 40 idas e voltas. Numere as perguntas
    dentro da mensagem e peça respostas na mesma ordem.
-4. Ao final de cada etapa, escreva o resumo de 3 a 6 linhas no chat, para o
+5. Ao final de cada etapa, escreva o resumo de 3 a 6 linhas no chat, para o
    usuário humano, e siga adiante sem esperar confirmação do subagente. A
    confirmação automática do próprio entrevistado não tem valor de revisão.
-5. Se uma resposta contradisser uma etapa anterior, mande a contradição de volta
+6. Se uma resposta contradisser uma etapa anterior, mande a contradição de volta
    ao `po-entrevistado` citando as duas falas e só prossiga depois de resolvida.
 
 ### Rastreabilidade
