@@ -107,8 +107,9 @@ do cliente (PRD-ESC-13, PRD-DEC-05).
 erros estendem as subclasses HTTP de `src/shared/errors/http-errors.ts` quando existe equivalente,
 como já fazem `InvalidStatusTransitionError` e `InsufficientStockError`, reservando a herança
 direta de `AppError` para o que não tiver, e o error middleware os trata sem alteração. O worker
-usa a factory `createLogger()` com serviço próprio, não o singleton da API, para que os logs dos
-dois processos sejam distinguíveis (PRD-ESC-16a, PRD-ESC-16b).
+precisa de identidade de serviço própria na saída de log, o que exige parametrizar a factory
+`createLogger()`, hoje sem parâmetro e com o nome do serviço fixo, e não apenas preferi-la ao
+singleton da API (PRD-ESC-16a, PRD-ESC-16b).
 
 ## Alternativas consideradas
 
