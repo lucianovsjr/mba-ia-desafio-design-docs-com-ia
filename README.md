@@ -36,6 +36,8 @@ O trabalho foi organizado em torno de uma ideia: **nenhum agente audita o própr
 6. **Fluxo da RFC**, em quatro etapas encadeadas: rascunho pelo Tech Lead, análise independente e debate com três especialistas, registro das decisões como ADRs, fechamento com auditoria e tracker.
 7. FDD, derivado da RFC e das ADRs já fechadas, seguindo o mesmo ciclo.
 
+Os passos 1 a 6 estão concluídos: a RFC está `Aceita` e as seis ADRs em `Aceito`. O passo 7 ainda não foi executado, e `docs/FDD.md` segue como placeholder.
+
 ### Os quatro papéis do fluxo de PRD
 
 | Papel | O que faz | Por que é separado |
@@ -85,6 +87,8 @@ Seis decisões de desenho sustentam esse fluxo:
 
 A ata e as análises não entram no tracker. São artefatos de processo, não documentos de design: incluí-las infla a cobertura com linhas que não são entregáveis. O tracker só é chamado quando o documento para de mudar, uma vez por ADR em `/rfc-adr` e uma vez pela RFC em `/rfc-close`.
 
+**O que o fluxo produziu nesta execução.** As três análises levantaram 19 pontos, sete deles classificados como bloqueador pelos próprios autores. O debate fechou em duas rodadas, não nas três permitidas, porque a segunda não trouxe ponto novo com evidência: 16 pontos terminaram `ACORDADO`, 2 `DIVERGENTE` e 1 `EM ABERTO`. Saíram dali seis ADRs, cobrindo as seis decisões principais da reunião, e cinco das dez questões em aberto da RFC. O fechamento consumiu duas rodadas de auditoria, com o revisor devolvendo `NÃO PRONTO` nas duas primeiras.
+
 ### A dependência circular entre RFC e ADRs
 
 A RFC precisa linkar as ADRs, e as ADRs nascem do debate da RFC. Fechar a RFC antes das ADRs deixaria os links vazios; escrever as ADRs antes do debate anularia o debate. A saída foi um estado intermediário: o debate encerra com a RFC em `Em revisão` e uma lista de decisões provisórias, `ADR-TBD-01` e seguintes, na seção de decisões relacionadas. A skill `/rfc-adr` consome essa lista, e só `/rfc-close` troca os provisórios pelos links reais, confere o link nos dois sentidos e marca a RFC como `Aceita`. Nenhum `TBD` pode sobrar no documento final, e isso é uma das checagens do auditor.
@@ -93,7 +97,9 @@ A RFC precisa linkar as ADRs, e as ADRs nascem do debate da RFC. Fechar a RFC an
 
 Um ADR tem dois momentos formais, a abertura e o aceite, e uma janela de revisão entre os dois. O ciclo está escrito por extenso em [`docs/prompts/rfc-fluxo.md`](docs/prompts/rfc-fluxo.md), seção "Ciclo de vida de um ADR", e é seguido pelas skills `/rfc-adr` e `/rfc-close`.
 
-A **abertura** exige um gatilho: a decisão está classificada como `ACORDADO` na ata. Ponto `DIVERGENTE` ou `EM ABERTO` não abre ADR, vira questão em aberto na RFC. Em seguida vem a deduplicação, porque dois pontos de eixos diferentes podem descrever a mesma escolha e o critério é um arquivo por decisão, não por ponto de debate. O número é alocado pela skill, o arquivo nasce em `Proposto`, e o tracker recebe as linhas antes de o ADR avançar.
+A **abertura** exige um gatilho, e há duas vias. A via normal: a decisão está classificada como `ACORDADO` na ata. Ponto `DIVERGENTE` ou `EM ABERTO` não abre ADR, vira questão em aberto na RFC. A via estrutural, acrescentada durante o fechamento pelo motivo descrito na iteração 14: a decisão foi fechada na reunião, está no PRD, não foi contestada em nenhuma rodada e é necessária à cobertura do checklist do desafio. Essa segunda via não empresta a classificação `ACORDADO`, porque ausência de objeção não é acordo obtido no debate; a decisão entra na ata com origem declarada como estrutural, sem ponto correspondente, e o ADR ancora direto no PRD e na transcrição.
+
+Em seguida vem a deduplicação, porque dois pontos de eixos diferentes podem descrever a mesma escolha e o critério é um arquivo por decisão, não por ponto de debate. O número é alocado pela skill, o arquivo nasce em `Proposto`, e o tracker recebe as linhas antes de o ADR avançar.
 
 O **aceite** roda no fechamento e é coletivo. São cinco condições, todas obrigatórias: nenhum achado `bloqueador` aberto no relatório do revisor, nenhum item marcado como `INVENTADO`, link de mão dupla entre RFC e ADR sem nenhum `TBD` restante, todo caminho de código citado existente no repositório, e as linhas já presentes no tracker. Cumpridas as cinco, `Proposto` vira `Aceito` em cada arquivo, e só então a RFC é marcada como `Aceita`. RFC aceita com ADR ainda em `Proposto` é estado inválido, e o revisor trata isso como bloqueador.
 
@@ -295,6 +301,40 @@ Iteração de processo, não de documento: aconteceu antes de existir uma linha 
 
 O desenho final tem quatro etapas, quatro agentes e um estado intermediário. Vale registrar que o ganho maior não veio de acrescentar um agente, veio de separar a análise do debate: a fase cega é o que impede que os três especialistas virem uma voz só.
 
+E cinco iterações que vieram da execução do fluxo da RFC, já com o desenho acima rodando:
+
+### 12. Três citações juntavam falas de pessoas diferentes sob um timestamp só
+
+O tracker recusou linhas em três ADRs por um motivo que o autor não enxergava: a citação `[09:07]` apresentava como fala contínua duas frases de participantes distintos, e o mesmo acontecia em `[09:11]` e `[09:25]`. O caso de `[09:25]` era o pior, porque o texto nomeava quem respondeu à objeção e omitia quem a levantou, apagando a autoria de uma das duas posições.
+
+O erro é fácil de cometer e quase invisível na revisão de quem escreveu: as frases estavam corretas, a atribuição implícita é que não estava. É a justificativa concreta da regra do prompt base de que nos artefatos do fluxo se cita o timestamp sem atribuir falante, e que nome de falante é trabalho do tracker, que lê a linha inteira da transcrição. As três citações foram reescritas declarando que o minuto tem mais de um falante.
+
+### 13. Uma afirmação sobre o código que o código não sustentava
+
+O debate produziu um ajuste aparentemente trivial: o worker deveria usar a factory `createLogger()` em vez do singleton do logger, para que os logs dos dois processos não se confundissem. O autor aceitou, o ajuste entrou na RFC e depois na ADR-006. Quando o tracker foi verificar, abriu o arquivo e mostrou que `createLogger()` não recebe parâmetro nenhum e tem o nome do serviço fixo dentro dela: trocar o singleton pela factory produziria exatamente o mesmo resultado, e a decisão não alcançava o efeito que ela mesma declarava.
+
+O defeito atravessou o debate inteiro porque o debatedor que o propôs descreveu o arquivo sem reler a assinatura, e o autor aceitou sem conferir. Corrigido nos dois documentos: a decisão agora diz que dar identidade própria ao worker exige parametrizar a factory. Vale como lembrete de que "ancorado em caminho de arquivo real" não é o mesmo que "verificado no arquivo".
+
+### 14. Duas instruções do próprio projeto se contradiziam
+
+No fechamento, o revisor barrou duas ADRs com um argumento correto: o prompt base diz que decisão que não passou pelo debate não abre ADR, e nenhuma das duas tinha ponto na ata, por não terem sido contestadas por ninguém. Só que a skill `/rfc-adr` manda o oposto de forma explícita, escrever a ADR ancorada na transcrição justamente quando a ata não produziu a decisão, e sem essas duas o conjunto cobriria quatro das seis decisões principais, abaixo do mínimo do desafio.
+
+Não era um erro de julgamento a corrigir, era um conflito entre dois documentos de processo, e o revisor só conhecia um deles. A saída não podia ser escolhida pelo agente: mudar a fonte única do processo para caber o resultado é exatamente o vício que o revisor apontou. A decisão foi levada a quem é dono do projeto, e o prompt base ganhou uma segunda via de abertura, com quatro condições cumulativas e a objeção do revisor incorporada ao texto: ausência de objeção não é acordo, e essa via não empresta a classificação `ACORDADO`. A regra mudou antes do fechamento, e a ata registra que mudou.
+
+### 15. As duas auditorias se derrubaram, em direções opostas
+
+O cruzamento entre revisor e tracker foi desenhado para pegar item que um marca como inventado e o outro rastreia. O que ele pegou na prática foi diferente e mais útil: os dois discordaram sobre encaminhamento, e cada um estava certo uma vez.
+
+O tracker recusou criar linha para uma decisão sobre exposição de secret, alegando que o formato da coluna de fonte não comportava uma derivação. O revisor mostrou que o próprio tracker já tinha feito isso duas vezes no mesmo pacote, e que a analogia usada para dispensar a linha não se sustentava porque as duas decisões não eram equivalentes. O tracker estava errado. Antes disso, porém, tinha sido o tracker a derrubar o encaminhamento do autor nos itens 12 e 13.
+
+Nenhum dos dois papéis é confiável sozinho, e a conclusão prática é que o relatório de um auditor entra como argumento a verificar, não como veredito a aplicar. Os dois argumentos foram conferidos na fonte antes de decidir qual valia.
+
+### 16. Uma linha do tracker foi escrita fora do escritor único
+
+O agente do tracker caiu por limite de sessão no meio da última correção. A linha que faltava era pequena e bem especificada, e a sessão principal a escreveu, verificando a transcrição e a integridade do arquivo por conta própria.
+
+Fica registrado como desvio, não como solução: a regra de escritor único existe para manter um critério único de julgamento sobre o arquivo inteiro, e uma linha correta escrita fora desse critério continua sendo uma exceção. O revisor confirmou a origem de forma independente e classificou como pendência, não como bloqueador, com a recomendação de que o agente reassine a linha. É a pendência aberta mais concreta da entrega.
+
 ---
 
 ## Como navegar a entrega
@@ -305,10 +345,10 @@ O desenho final tem quatro etapas, quatro agentes e um estado intermediário. Va
 2. **[`docs/prompts/entrevista-prd.md`](docs/prompts/entrevista-prd.md)** o prompt que gerou o PRD. Ler antes do PRD deixa visível o que é estrutura imposta e o que é conteúdo extraído da reunião.
 3. **[`docs/PRD.md`](docs/PRD.md)** o problema, o público, o escopo e as métricas. Responde por que e o quê.
 4. **[`docs/prompts/rfc-fluxo.md`](docs/prompts/rfc-fluxo.md)** as regras do fluxo que gerou a RFC e as ADRs, incluindo a regra de âncora e a regra de altura entre documentos.
-5. **[`docs/RFC.md`](docs/RFC.md)** a proposta técnica e as questões em aberto. Responde como pretendemos resolver.
+5. **[`docs/RFC.md`](docs/RFC.md)** a proposta técnica e as questões em aberto. Responde como pretendemos resolver. Status `Aceita`, com dez questões em aberto que o debate deixou nomeadas de propósito.
 6. **[`docs/debates/`](docs/debates/)** as três análises e a ata do debate. Não é entregável do desafio, é a evidência de onde saíram as questões em aberto e as decisões registradas.
-7. **[`docs/adrs/`](docs/adrs/)** cada decisão isolada, com contexto e consequências.
-8. **[`docs/FDD.md`](docs/FDD.md)** a especificação de implementação.
+7. **[`docs/adrs/`](docs/adrs/)** cada decisão isolada, com contexto e consequências. Seis ADRs em `Aceito`, cobrindo as seis decisões principais da reunião.
+8. **[`docs/FDD.md`](docs/FDD.md)** a especificação de implementação. Ainda não produzido: é a próxima etapa, e recebe o que a RFC deixou de fora por altura, como o contrato do payload, a modelagem das tabelas e a matriz de erros.
 9. **[`docs/TRACKER.md`](docs/TRACKER.md)** a rastreabilidade de cada item. Serve como conferência: qualquer afirmação dos documentos anteriores deve ter linha aqui, com timestamp e falante ou caminho de arquivo.
 
 ### Mapa de arquivos
@@ -324,8 +364,18 @@ docs/
 ├── FDD.md                             especificação de implementação
 ├── TRACKER.md                         rastreabilidade item a item
 ├── adrs/                              decisões arquiteturais isoladas
+│   ├── ADR-001-outbox-transacional-no-mysql.md
+│   ├── ADR-002-worker-em-processo-separado-com-polling.md
+│   ├── ADR-003-retry-com-backoff-e-dead-letter-queue.md
+│   ├── ADR-004-hmac-sha256-com-secret-por-endpoint.md
+│   ├── ADR-005-entrega-at-least-once-com-id-de-evento.md
+│   └── ADR-006-reuso-dos-padroes-existentes.md
 ├── debates/
 │   └── RFC-001/                       análises dos três especialistas e ata do debate
+│       ├── analise-arquiteto.md
+│       ├── analise-dev.md
+│       ├── analise-seguranca.md
+│       └── ata.md
 └── prompts/
     ├── entrevista-prd.md              prompt de entrevista de PRD
     └── rfc-fluxo.md                   prompt do fluxo de RFC e ADRs

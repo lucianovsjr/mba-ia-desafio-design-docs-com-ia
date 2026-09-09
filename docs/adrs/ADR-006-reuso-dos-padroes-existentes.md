@@ -6,7 +6,7 @@ Decisores: Larissa (Tech Lead), Bruno (Engenheiro Pleno, time de Pedidos), Sofia
 
 ## Status
 
-Proposto
+Aceito
 
 ## Contexto
 

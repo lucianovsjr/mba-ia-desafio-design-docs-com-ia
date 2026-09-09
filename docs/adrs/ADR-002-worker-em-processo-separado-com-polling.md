@@ -6,7 +6,7 @@ Decisores: Larissa (Tech Lead), Diego (Engenheiro Sênior, time de Plataforma), 
 
 ## Status
 
-Proposto
+Aceito
 
 ## Contexto
 
@@ -19,11 +19,12 @@ chegada da requisição (PRD-MET-01).
 O minuto `[TRANSCRICAO 09:11]` tem mais de um falante e registra duas coisas distintas. A
 primeira é a exigência de processo separado: "o worker tem que rodar como processo separado,
 não dentro da mesma instância da API. Senão se a API reinicia, perde o worker". A segunda,
-de outro participante no mesmo minuto, é a proposta de "uma entry-point nova no projeto. Tipo
-o que a gente já tem em src/server.ts, criar um src/worker.ts". O arquivo `src/server.ts` existe hoje
-como precedente de entry point único do processo da API; o caminho do worker citado na fala
-ainda não existe no repositório e é artefato a criar, assim como o script correspondente,
-ausente hoje do `package.json`.
+de outro participante no mesmo minuto, é a proposta de uma entry point nova no projeto, nos
+moldes da que já existe para a API, com um script próprio para executá-la. O arquivo
+`src/server.ts` existe hoje como precedente de entry point único do processo da API. O caminho
+sugerido na fala para o worker não existe no repositório e é artefato a criar, assim como o
+script correspondente, ausente hoje do `package.json`; por isso ele não é citado aqui como
+caminho de código verificado.
 
 `[TRANSCRICAO 09:09]` fixa o mecanismo de leitura: "Polling em loop. A cada 2 segundos,
 busca os eventos pendentes mais antigos, processa, marca" (PRD-ESC-04a, PRD-DEC-03), com o

@@ -6,7 +6,7 @@ Decisores: Larissa (Tech Lead), Diego (Engenheiro Sênior, time de Plataforma), 
 
 ## Status
 
-Proposto
+Aceito
 
 ## Contexto
 
@@ -34,10 +34,12 @@ Mais limpa a leitura da outbox principal (...) Manual via endpoint admin. Tipo u
 PRD-ESC-08a). O acesso ao replay é restrito ao papel ADMIN reusando o `requireRole` já
 existente em `src/middlewares/auth.middleware.ts` (PRD-ESC-08b, PRD-FR-07b).
 
-Esta decisão não nasceu de um ponto contestado no debate da RFC-001: nenhum dos três
-debatedores levantou ponto sobre ela, e ela não aparece na tabela "Decisões a registrar" da
-ata. Ela é registrada aqui como decisão estrutural da própria reunião, ancorada direto no
-PRD e na transcrição.
+Esta decisão não nasceu de um ponto do debate da RFC-001: nenhum dos três debatedores levantou
+ponto sobre ela, e por isso ela não tem linha na tabela "Pontos consolidados" da ata nem recebe
+a classificação `ACORDADO`. Ela é aberta pela via estrutural descrita em
+`docs/prompts/rfc-fluxo.md`, aparece na tabela "Decisões a registrar" da ata como
+`ADR-TBD-06`, com a origem declarada como estrutural, e é ancorada direto no PRD e na
+transcrição.
 
 ## Decisão
 

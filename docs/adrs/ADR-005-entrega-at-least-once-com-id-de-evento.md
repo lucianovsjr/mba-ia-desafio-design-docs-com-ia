@@ -6,7 +6,7 @@ Decisores: Larissa (Tech Lead), Diego (Engenheiro Sênior, time de Plataforma), 
 
 ## Status
 
-Proposto
+Aceito
 
 ## Contexto
 
@@ -29,7 +29,10 @@ event_id resolve 99% dos casos."
 destacado no portal de desenvolvedor pros clientes" (PRD-DEP-03).
 
 A garantia at-least-once em si é decisão estrutural da reunião, não contestada por nenhum
-debatedor no debate da RFC-001, e é ancorada aqui direto na transcrição e no PRD. O que o
+debatedor no debate da RFC-001, e por isso aberta pela via estrutural descrita em
+`docs/prompts/rfc-fluxo.md`, como `ADR-TBD-07` na tabela "Decisões a registrar" da ata, sem
+ponto correspondente em "Pontos consolidados" e sem classificação `ACORDADO`. É ancorada aqui
+direto na transcrição e no PRD. O que o
 debate trouxe de novo foi o ponto SEC-03: com a outbox e a dead letter em tabelas separadas
 (ADR-003) e identificadores em UUID (PRD-NFR-CONF-06), o caminho mais provável de
 implementação do replay administrativo é inserir uma linha nova na outbox com um id novo, o

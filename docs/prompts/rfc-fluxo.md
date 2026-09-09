@@ -221,10 +221,22 @@ que a torna vigente. Entre os dois existe uma janela de revisão. Nenhum ADR nas
 
 ### Abertura
 
-1. **Gatilho.** A decisão está classificada como `ACORDADO` na ata do debate e
-   aparece na tabela "Decisões a registrar". Decisão que não passou pelo debate não
-   abre ADR. Ponto `DIVERGENTE` ou `EM ABERTO` vira questão em aberto na RFC, não
-   ADR.
+1. **Gatilho.** Existem duas vias de abertura, e só duas.
+
+   A via normal: a decisão está classificada como `ACORDADO` na ata do debate e
+   aparece na tabela "Decisões a registrar". Ponto `DIVERGENTE` ou `EM ABERTO` vira
+   questão em aberto na RFC, não ADR.
+
+   A via estrutural: a decisão foi fechada na reunião e está registrada no PRD, não
+   foi contestada por nenhum debatedor em nenhuma rodada, e é necessária para a
+   cobertura do checklist de decisões principais do `DESAFIO.md`. Ausência de
+   objeção não é o mesmo que acordo obtido no debate, então esta via não empresta a
+   classificação `ACORDADO`: a decisão entra na tabela "Decisões a registrar" com a
+   origem declarada como estrutural e sem ponto de debate correspondente, e a ata diz
+   por escrito que ela não nasceu de discussão. Uma ADR aberta por esta via ancora-se
+   direto no PRD e na transcrição.
+
+   Fora dessas duas vias, decisão não abre ADR.
 2. **Deduplicação.** Uma ADR por decisão, não uma por ponto de debate. Dois pontos
    de eixos diferentes que descrevem a mesma escolha viram um único arquivo.
 3. **Numeração.** O número é alocado pela skill `rfc-adr`, em sequência, olhando o

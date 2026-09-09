@@ -32,7 +32,9 @@ posições restantes ou recuaram, ou foram sustentadas sem fonte nova.
 | SEC-06 | O risco de vazamento de secret no log fica só diagnosticado, sem proposta: o redact do Pino não cobre secret nem assinatura | `src/shared/logger/index.ts`, `[TRANSCRICAO 09:22]` | Aceito como decisão | ACORDADO | ADR-TBD-04 |
 | SEC-07 | Não está definido se a secret reaparece nas respostas de leitura do CRUD | PRD-ESC-09b, PRD-FR-01a, PRD-FR-01b | Aceito como decisão, por derivar do propósito da secret por endpoint | ACORDADO | ADR-TBD-04 |
 
-Totais: 16 `ACORDADO`, 2 `DIVERGENTE`, 1 `EM ABERTO`, 0 `FORA DE ESCOPO`.
+Totais dos pontos levantados na análise: 16 `ACORDADO`, 2 `DIVERGENTE`, 1 `EM ABERTO`,
+0 `FORA DE ESCOPO`, sobre 19 pontos. As duas decisões estruturais acrescentadas na tabela
+abaixo não são pontos de debate e não entram nesta contagem.
 
 ## Decisões a registrar
 
@@ -43,6 +45,32 @@ Totais: 16 `ACORDADO`, 2 `DIVERGENTE`, 1 `EM ABERTO`, 0 `FORA DE ESCOPO`.
 | ADR-TBD-03 | O replay de item da dead letter preserva o identificador de evento original, para não quebrar a deduplicação do cliente | SEC-03 |
 | ADR-TBD-04 | Não expor a secret do webhook fora do momento de emissão: redação no log e ausência nas respostas de leitura | SEC-06, SEC-07 |
 | ADR-TBD-05 | Trilha de auditoria do replay como peça própria do módulo de webhooks, consultável, e não linha solta no log compartilhado, sem exigência de retenção | DEV-04 |
+| ADR-TBD-06 | Retry com backoff exponencial de 1 minuto a 12 horas, cinco tentativas, e dead letter em tabela separada com replay administrativo | nenhum; decisão estrutural não contestada |
+| ADR-TBD-07 | Garantia de entrega at-least-once, com deduplicação a cargo do cliente | nenhum; decisão estrutural não contestada |
+
+### Nota sobre ADR-TBD-06 e ADR-TBD-07
+
+As cinco primeiras decisões desta tabela nasceram de pontos do debate. As duas últimas, não, e
+o registro precisa dizer isso com todas as letras em vez de dissolver a diferença.
+
+Retry com backoff e dead letter, e a garantia at-least-once, são decisões estruturais fechadas
+na reunião (PRD-DEC-07, PRD-DEC-05) que nenhum dos três debatedores contestou. Elas estavam no
+rascunho da RFC submetido à análise, os três leram o documento inteiro, e nenhum levantou ponto
+contra elas.
+
+Ausência de objeção não é acordo obtido no debate, e estas duas linhas não recebem
+classificação `ACORDADO`: elas não têm ponto correspondente na tabela "Pontos consolidados",
+porque ponto nenhum foi levantado. Elas entram pela via estrutural de abertura de ADR, descrita
+em `docs/prompts/rfc-fluxo.md`, que exige decisão fechada na reunião, registrada no PRD, não
+contestada em nenhuma rodada, e necessária à cobertura do checklist do `DESAFIO.md`. As ADRs
+abertas por essa via ancoram-se direto no PRD e na transcrição, não nesta ata.
+
+Foram acrescentadas aqui na fase de fechamento, ao se constatar que sem elas o conjunto de ADRs
+não cobriria as seis decisões principais do `DESAFIO.md`. O acréscimo é retroativo à ata
+original do debate, e está sinalizado como tal para que ninguém leia estas duas linhas como
+resultado de discussão que não houve. A via estrutural foi acrescentada ao prompt base na mesma
+ocasião, como mudança consciente da regra, e não como justificativa construída depois do fato
+para caber este resultado.
 
 ## Registro das rodadas
 

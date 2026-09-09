@@ -6,7 +6,7 @@ Decisores: Larissa (Tech Lead), Sofia (Engenheira de Segurança), Diego (Engenhe
 
 ## Status
 
-Proposto
+Aceito
 
 ## Contexto
 

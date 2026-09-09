@@ -6,7 +6,7 @@ Decisores: Larissa (Tech Lead), Diego (Engenheiro Sênior, time de Plataforma), 
 
 ## Status
 
-Proposto
+Aceito
 
 ## Contexto
 

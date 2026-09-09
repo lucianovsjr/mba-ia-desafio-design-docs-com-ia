@@ -1,6 +1,6 @@
 # RFC: Notificação outbound de mudança de status de pedidos via transactional outbox
 
-Status: Em revisão
+Status: Aceita
 Autor: Larissa (Tech Lead)
 Data: 2026-09-01
 Revisores: Marcos (Product Manager), Bruno (Engenheiro Pleno, time de Pedidos), Diego (Engenheiro Sênior, time de Plataforma), Sofia (Engenheira de Segurança)
@@ -50,12 +50,10 @@ naquele momento, não recalculado no envio (PRD-FR-03c, `[TRANSCRICAO 09:52]`).
 Assumo a posição, e não a deixo em aberto: mantemos a publicação dentro da transação e aceitamos a
 contenção adicional. O aceite é qualitativo e declarado como tal, sem medição por trás: a
 transação já faz uma consulta e um update por item antes desta feature, e as duas operações
-acrescentadas são proporcionalmente pequenas nesse conjunto. Revisamos com dados de produção, e o
-eventual ajuste de tempo limite é matéria de FDD.
-
-A consequência dessa escolha é deliberada e desconfortável: falha na inserção do evento derruba a
-mudança de status junto (PRD-FR-03e, PRD-RISK-06). Aceitamos porque a alternativa é ter status
-alterado sem evento, e o objetivo inteiro da outbox é eliminar essa janela.
+acrescentadas são proporcionalmente pequenas nesse conjunto. A consequência é deliberada e
+desconfortável: falha na inserção do evento derruba a mudança de status junto (PRD-FR-03e,
+PRD-RISK-06). Aceitamos porque a alternativa é ter status alterado sem evento, e o objetivo
+inteiro da outbox é eliminar essa janela. Detalhe e trade-off completos na ADR-001.
 
 **Worker.** Processo Node separado, com entry point próprio ao lado do `src/server.ts` e instância
 própria de PrismaClient (PRD-CTX-09, PRD-ESC-04b), em polling a cada 2 segundos sobre os eventos
@@ -63,12 +61,10 @@ pendentes mais antigos, em lotes pequenos de tamanho não definido pela fonte (P
 separação existe para que um restart da API não interrompa o processamento (PRD-DEC-02,
 `[TRANSCRICAO 09:11]`), e os dois processos sincronizam apenas pelo banco (PRD-ARQ-11).
 
-O processamento de um lote fica em uma função isolável do loop de polling, e não embutido nele
-(PRD-TEST-07). Dentro do lote, a entrega é sequencial entre eventos do mesmo pedido e concorrente
-entre pedidos distintos. Isso não é preferência de estilo: a garantia acordada é ordenação por
-`order_id` em ordem de `created_at` (PRD-DEC-06, `[TRANSCRICAO 09:12]`), e serializar o lote
-inteiro faria um cliente lento consumindo os 10 segundos de timeout atrasar eventos de outros
-customers sem ganho de ordenação nenhum, contra PRD-MET-01.
+O processamento de um lote fica em uma função isolável do loop de polling (PRD-TEST-07), e dentro
+do lote a entrega é sequencial entre eventos do mesmo pedido e concorrente entre pedidos
+distintos: a garantia acordada é por `order_id` (PRD-DEC-06) e serializar o lote inteiro faria um
+cliente lento atrasar eventos de outros customers sem ganho de ordenação, contra PRD-MET-01.
 
 **Entrega.** POST HTTP para a URL cadastrada, com timeout de 10 segundos por tentativa
 (PRD-ESC-05). Falha de resposta ou timeout reagenda o evento pela progressão de 1 minuto, 5
@@ -97,19 +93,15 @@ entre os caminhos redigidos.
 
 **Configuração.** O CRUD é autenticado pelo JWT já existente e não tem restrição por papel nesta
 entrega: qualquer usuário autenticado pode cadastrar e alterar a URL de destino de um customer
-(PRD-DEC-08, `[TRANSCRICAO 09:37]`). Registro isso na proposta em vez de deixá-lo implícito,
-porque omitir uma decisão não é o mesmo que aceitá-la.
+(PRD-DEC-08). Registro isso na proposta porque omitir uma decisão não é o mesmo que aceitá-la.
 
 **Garantia de entrega.** At-least-once, com identificador único por evento e deduplicação a cargo
 do cliente (PRD-ESC-13, PRD-DEC-05).
 
-**Reuso.** O módulo entra em `src/modules/webhooks` no padrão dos demais domínios (PRD-CTX-07). Os
-erros estendem as subclasses HTTP de `src/shared/errors/http-errors.ts` quando existe equivalente,
-como já fazem `InvalidStatusTransitionError` e `InsufficientStockError`, reservando a herança
-direta de `AppError` para o que não tiver, e o error middleware os trata sem alteração. O worker
-precisa de identidade de serviço própria na saída de log, o que exige parametrizar a factory
-`createLogger()`, hoje sem parâmetro e com o nome do serviço fixo, e não apenas preferi-la ao
-singleton da API (PRD-ESC-16a, PRD-ESC-16b).
+**Reuso.** O módulo entra em `src/modules/webhooks` no padrão dos demais domínios (PRD-CTX-07),
+reusando erros, error middleware, logger e `requireRole` já existentes na base, com os ajustes de
+detalhe (padrão de herança de erro, parametrização do logger) registrados na ADR-006 (PRD-ESC-16a,
+PRD-ESC-16b).
 
 ## Alternativas consideradas
 
@@ -226,24 +218,31 @@ com ciclos de deploy independentes (PRD-DEC-02) sem definição de restart e ale
 compete com uma tabela cada vez maior.
 
 **Nos clientes já integrados.** Nenhuma quebra: a feature é aditiva e o `GET /orders` segue
-funcionando para quem preferir polling. O impacto é de contrato: cada cliente precisa expor
-endpoint HTTPS, verificar HMAC e deduplicar por evento (PRD-DEP-05), e a garantia at-least-once
-precisa estar documentada antes da integração (PRD-DEP-03).
+funcionando. O impacto é de contrato: cada cliente precisa expor endpoint HTTPS, verificar HMAC e
+deduplicar por evento (PRD-DEP-05), com a garantia at-least-once documentada antes (PRD-DEP-03).
 
 **Risco de ordenação ao escalar.** A garantia por pedido morre no segundo worker deliberado, e o
 particionamento que resolveria isso está adiado (PRD-DEC-06, PRD-FESC-04).
 
 ## Decisões relacionadas
 
-Provisórios vindos da ata em `docs/debates/RFC-001/ata.md`, a serem substituídos pelos ADRs no
-fechamento:
+Decisões registradas como ADR a partir da ata em `docs/debates/RFC-001/ata.md`. Cada ADR aponta
+de volta para este documento na linha `RFC de origem`.
 
-- `ADR-TBD-01`: publicação do evento dentro da transação do `changeStatus`, depois do update
-  de status, com aceite declarado e não quantificado da contenção adicional
-- `ADR-TBD-02`: processamento da outbox por função de lote isolável do loop de polling, com
-  entrega sequencial por `order_id` e concorrente entre pedidos distintos
-- `ADR-TBD-03`: replay de item da dead letter preserva o identificador de evento original
-- `ADR-TBD-04`: secret do webhook não exposta fora do momento de emissão, com redação no log
-  e ausência nas respostas de leitura
-- `ADR-TBD-05`: trilha de auditoria do replay como peça própria do módulo, consultável, sem
-  exigência de retenção
+- [ADR-001: Outbox transacional no MySQL dentro do changeStatus](adrs/ADR-001-outbox-transacional-no-mysql.md),
+  publicação do evento na mesma transação, depois do update de status, com aceite declarado e
+  não quantificado da contenção adicional
+- [ADR-002: Worker em processo separado com polling](adrs/ADR-002-worker-em-processo-separado-com-polling.md),
+  processamento da outbox por função de lote isolável do loop, com entrega sequencial por
+  `order_id` e concorrente entre pedidos distintos
+- [ADR-003: Retry com backoff e dead letter queue](adrs/ADR-003-retry-com-backoff-e-dead-letter-queue.md),
+  cinco tentativas na progressão de 1 minuto a 12 horas e dead letter em tabela separada, com
+  replay administrativo
+- [ADR-004: HMAC-SHA256 com secret por endpoint](adrs/ADR-004-hmac-sha256-com-secret-por-endpoint.md),
+  assinatura por endpoint com rotação de 24 horas, e secret não exposta fora do momento de
+  emissão
+- [ADR-005: Entrega at-least-once com identificador único de evento](adrs/ADR-005-entrega-at-least-once-com-id-de-evento.md),
+  deduplicação a cargo do cliente, com o replay preservando o identificador original
+- [ADR-006: Reuso dos padrões existentes do projeto](adrs/ADR-006-reuso-dos-padroes-existentes.md),
+  reuso de erros, error middleware, logger e middleware de papel, com a trilha de auditoria do
+  replay como limite explícito desse reuso
