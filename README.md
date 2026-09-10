@@ -36,7 +36,7 @@ O trabalho foi organizado em torno de uma ideia: **nenhum agente audita o própr
 6. **Fluxo da RFC**, em quatro etapas encadeadas: rascunho pelo Tech Lead, análise independente e debate com três especialistas, registro das decisões como ADRs, fechamento com auditoria e tracker.
 7. FDD, derivado da RFC e das ADRs já fechadas, seguindo o mesmo ciclo.
 
-Os passos 1 a 6 estão concluídos: a RFC está `Aceita` e as seis ADRs em `Aceito`. O passo 7 ainda não foi executado, e `docs/FDD.md` segue como placeholder.
+Os sete passos estão concluídos: a RFC está `Aceita`, as seis ADRs em `Aceito`, e o FDD passou por quatro rodadas de auditoria até `PRONTO` (iteração 17).
 
 ### Os quatro papéis do fluxo de PRD
 
@@ -356,8 +356,8 @@ Fechamento: `tracker-rastreabilidade` acrescentou 135 linhas `FDD-*` ao `docs/TR
 5. **[`docs/RFC.md`](docs/RFC.md)** a proposta técnica e as questões em aberto. Responde como pretendemos resolver. Status `Aceita`, com dez questões em aberto que o debate deixou nomeadas de propósito.
 6. **[`docs/debates/`](docs/debates/)** as três análises e a ata do debate. Não é entregável do desafio, é a evidência de onde saíram as questões em aberto e as decisões registradas.
 7. **[`docs/adrs/`](docs/adrs/)** cada decisão isolada, com contexto e consequências. Seis ADRs em `Aceito`, cobrindo as seis decisões principais da reunião.
-8. **[`docs/FDD.md`](docs/FDD.md)** a especificação de implementação. Ainda não produzido: é a próxima etapa, e recebe o que a RFC deixou de fora por altura, como o contrato do payload, a modelagem das tabelas e a matriz de erros.
-9. **[`docs/TRACKER.md`](docs/TRACKER.md)** a rastreabilidade de cada item. Serve como conferência: qualquer afirmação dos documentos anteriores deve ter linha aqui, com timestamp e falante ou caminho de arquivo.
+8. **[`docs/FDD.md`](docs/FDD.md)** a especificação de implementação, produzida por entrevista automatizada com o `fdd-entrevistado`. Recebe o que a RFC deixou de fora por altura: contrato do payload, modelagem das tabelas e matriz de erros.
+9. **[`docs/TRACKER.md`](docs/TRACKER.md)** a rastreabilidade de cada item, incluindo as 135 linhas `FDD-*` do fechamento do FDD. Serve como conferência: qualquer afirmação dos documentos anteriores deve ter linha aqui, com timestamp e falante ou caminho de arquivo.
 
 ### Mapa de arquivos
 
@@ -386,23 +386,27 @@ docs/
 │       └── ata.md
 └── prompts/
     ├── entrevista-prd.md              prompt de entrevista de PRD
-    └── rfc-fluxo.md                   prompt do fluxo de RFC e ADRs
+    ├── rfc-fluxo.md                   prompt do fluxo de RFC e ADRs
+    └── entrevista-fdd.md              prompt de entrevista de FDD
 
 .claude/
 ├── skills/
-│   ├── entrevista-prd/SKILL.md        empacota a entrevista como comando
+│   ├── entrevista-prd/SKILL.md        empacota a entrevista de PRD como comando
 │   ├── rfc-draft/SKILL.md             rascunho da RFC pelo Tech Lead
 │   ├── rfc-debate/SKILL.md            análises independentes e debate
 │   ├── rfc-adr/SKILL.md               registro das decisões como ADRs
-│   └── rfc-close/SKILL.md             auditoria, links e fechamento
+│   ├── rfc-close/SKILL.md             auditoria, links e fechamento
+│   └── entrevista-fdd/SKILL.md        empacota a entrevista de FDD como comando
 └── agents/
-    ├── po-entrevistado.md             responde como o time da reunião
+    ├── po-entrevistado.md             responde como o time da reunião (PRD)
     ├── revisor-prd.md                 audita consistência e rastreabilidade do PRD
     ├── tracker-rastreabilidade.md     escritor único do tracker
     ├── rfc-arquiteto.md               debate arquitetura e escreve as ADRs
     ├── rfc-dev.md                     debate viabilidade no código existente
     ├── rfc-seguranca.md               debate assinatura, secret e replay
-    └── rfc-revisor.md                 audita a RFC e as ADRs prontas
+    ├── rfc-revisor.md                 audita a RFC e as ADRs prontas
+    ├── fdd-entrevistado.md            responde a entrevista de FDD, restrito a PRD/RFC/ADR
+    └── revisor-fdd.md                 audita o FDD contra o esqueleto e a rastreabilidade
 
 src/                                   aplicação existente (OMS)
 ```
@@ -427,3 +431,9 @@ Com o PRD e o tracker prontos, o fluxo da RFC roda em quatro comandos, na ordem:
 ```
 
 Cada um para ao final e pede aprovação antes do seguinte. As pausas são de propósito: debater em cima de um rascunho ruim desperdiça o debate inteiro, e registrar como ADR uma decisão que não foi conferida propaga o erro para todos os documentos que citarem aquela ADR. As quatro skills são idempotentes, rodar de novo corrige o que existe em vez de duplicar arquivo, ADR ou linha de tracker.
+
+Com a RFC e as ADRs aceitas, o FDD roda no mesmo padrão do PRD, entrevista automatizada seguida de auditoria:
+
+```
+/entrevista-fdd auto
+```
