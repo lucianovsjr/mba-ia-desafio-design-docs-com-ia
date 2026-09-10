@@ -1,0 +1,543 @@
+{
+  "meta": {
+    "product_or_system": "Order Management System (OMS) - Sistema de Webhooks de Notificação de Pedidos",
+    "feature_name": "Sistema de Webhooks de Notificação de Pedidos",
+    "fdd_owner": "Larissa (Tech Lead)",
+    "version": "1.0",
+    "date": "2026-09-09"
+  },
+  "context": {
+    "technical_motivation": "Ausência de um canal outbound de notificação de mudança de status de pedido: hoje os clientes B2B só descobrem a mudança fazendo polling em GET /orders, sem nenhum aviso de evento [PRD seção Problemas priorizados].",
+    "fit_with_hld": "A feature publica o evento de forma transacionalmente consistente com a mudança de status usando outbox no MySQL já existente, sem infraestrutura nova de mensageria [RFC seção TL;DR] [ADR-001]. Integra no changeStatus em src/modules/orders/order.service.ts, dentro da mesma transação, via publishWebhookEvent(tx, order, fromStatus, toStatus) [ADR-001]. O restante é um módulo novo, src/modules/webhooks, no padrão de src/modules/orders/ [ADR-006], mais um worker em processo Node separado, entry point próprio ao lado de src/server.ts, com PrismaClient próprio [ADR-002].",
+    "actors": [
+      "Cliente B2B integrador, consome os endpoints REST de configuração de webhook, rotação de secret e consulta de entregas, autenticado pelo JWT já existente [PRD seção Público-alvo] [PRD seção RF-01]",
+      "Operador interno com papel ADMIN, reprocessa manualmente eventos da dead letter queue, restrito por requireRole em src/middlewares/auth.middleware.ts [PRD seção RF-07] [ADR-003]",
+      "Endpoint HTTPS do próprio cliente, único destinatário externo do fluxo, exclusivamente outbound [RFC seção Contexto e problema]"
+    ],
+    "assumptions": [
+      "Status codes numéricos exatos dos endpoints da plataforma não são fixados pela fonte; inferidos do padrão de código em src/modules/orders/order.controller.ts e src/shared/errors/http-errors.ts (hipótese)",
+      "Nomes literais de campos JSON não citados pela fonte (ex: id, active, createdAt, eventId, success) são hipótese composta a partir do que a fonte descreve",
+      "Tracing distribuído ponta a ponta como default de observabilidade é hipótese do PRD, não definida pela fonte [PRD seção Requisitos não funcionais - Observabilidade]"
+    ],
+    "constraints": [
+      "Nenhuma infraestrutura nova provisionada, reuso do MySQL/Prisma já existente [PRD seção Objetivos e métricas] [ADR-006]",
+      "Ordenação garantida apenas por order_id em regime de worker único, sem garantia técnica de instância única [RFC seção Contexto e problema] [ADR-002]",
+      "Payload de entrega limitado a 64 KB, sem truncamento [PRD seção Escopo] [PRD seção RF-04]"
+    ]
+  },
+  "technical_objectives": [
+    {
+      "objective": "Latência de entrega do evento",
+      "measure_or_invariant": "Menor que 10 segundos entre o commit da mudança de status e a chegada da requisição no endpoint do cliente, no cenário sem falha [PRD seção Objetivos e métricas]"
+    },
+    {
+      "objective": "Frequência de disparo do worker",
+      "measure_or_invariant": "Polling a cada 2 segundos, pior caso de latência de disparo [PRD seção Requisitos não funcionais - Performance] [ADR-002]"
+    },
+    {
+      "objective": "Timeout de entrega HTTP",
+      "measure_or_invariant": "10 segundos por tentativa [PRD seção RF-04] [ADR-003]"
+    },
+    {
+      "objective": "Janela de retry antes da dead letter",
+      "measure_or_invariant": "5 tentativas cobrindo cerca de 15 horas (1min, 5min, 30min, 2h, 12h) [PRD seção Objetivos e métricas] [ADR-003]"
+    },
+    {
+      "objective": "Consistência entre mudança de status e evento gravado",
+      "measure_or_invariant": "100% de proporção entre mudanças elegíveis e eventos gravados na outbox, garantido por transação [PRD seção Objetivos e métricas] [ADR-001]"
+    },
+    {
+      "objective": "Custo de infraestrutura",
+      "measure_or_invariant": "Zero novos componentes de infraestrutura [PRD seção Objetivos e métricas] [ADR-006]"
+    },
+    {
+      "objective": "Garantia de entrega",
+      "measure_or_invariant": "At-least-once, não exactly-once, deduplicação de responsabilidade do cliente via X-Event-Id único por evento [ADR-005]"
+    },
+    {
+      "objective": "Ordenação por pedido",
+      "measure_or_invariant": "Entrega sequencial por order_id, concorrente entre pedidos distintos, válida apenas sob premissa de worker único [ADR-002]"
+    },
+    {
+      "objective": "Integridade do payload",
+      "measure_or_invariant": "Payload gravado como snapshot no momento da inserção, nunca recalculado no envio [ADR-001]"
+    },
+    {
+      "objective": "Autenticidade da entrega",
+      "measure_or_invariant": "Assinatura HMAC-SHA256 determinística sobre o corpo, verificável pelo cliente [ADR-004]"
+    }
+  ],
+  "scope": {
+    "included": [
+      "Tabela webhook_outbox, inserida dentro da transação do changeStatus via publishWebhookEvent(tx, order, fromStatus, toStatus) [PRD seção Escopo] [ADR-001]",
+      "Módulo src/modules/webhooks no padrão de src/modules/orders/ (controller, service, repository, routes, schemas) [ADR-006]",
+      "Worker em processo Node separado, entry point próprio, PrismaClient próprio, polling a cada 2s [ADR-002]",
+      "Entrega HTTP POST com timeout de 10s, headers X-Event-Id, X-Signature, X-Timestamp, X-Webhook-Id, Content-Type: application/json [PRD seção RF-04]",
+      "Retry com backoff exponencial (5 tentativas, 1min a 12h) e tabela webhook_dead_letter separada, com replay administrativo restrito a ADMIN via requireRole [ADR-003]",
+      "Assinatura HMAC-SHA256 com secret única por endpoint, rotacionável com grace period de 24h, secret nunca exposta fora do momento de emissão [ADR-004]",
+      "Entrega at-least-once com X-Event-Id, replay preservando o identificador original [ADR-005]",
+      "Trilha de auditoria própria e consultável do replay administrativo [ADR-006]",
+      "Parametrização de createLogger() em src/shared/logger/index.ts e extensão de redactPaths para cobrir secret e assinatura [ADR-006] [ADR-004]",
+      "CRUD de configuração de webhook aberto a qualquer papel autenticado, JWT existente [PRD seção RF-01]"
+    ],
+    "excluded": [
+      "Adiado: notificação por e-mail em falha repetida [PRD seção Fora de escopo]",
+      "Adiado: dashboard visual do cliente [PRD seção Fora de escopo]",
+      "Adiado: arquivamento das linhas entregues da outbox (~30 dias) [PRD seção Fora de escopo]",
+      "Adiado: escala para múltiplos workers com particionamento por order_id ou lock pessimista [PRD seção Fora de escopo] [ADR-002]",
+      "Adiado: endurecimento de permissões do CRUD de webhook [PRD seção Fora de escopo] [RFC seção Questões em aberto]",
+      "Adiado: rate limiting de envio de webhooks [PRD seção Ponto em aberto] [RFC seção Questões em aberto]",
+      "Adiado: definição de qual secret assina durante o grace period (hipótese) [ADR-004] [RFC seção Questões em aberto]",
+      "Adiado: restart, health check e alerta para o worker [PRD seção Disponibilidade]",
+      "Adiado: versionamento/evolução de schema do payload [RFC seção Questões em aberto]",
+      "Adiado: validação da URL de destino contra rede privada/metadados de nuvem [RFC seção Questões em aberto]",
+      "Adiado: mecanismo técnico de garantia de worker único [ADR-002]",
+      "Descartado: disparo síncrono de HTTP dentro da transação de mudança de status [RFC seção Alternativas consideradas] [ADR-001]",
+      "Descartado: fila dedicada tipo Redis Streams [RFC seção Alternativas consideradas] [ADR-001]",
+      "Descartado: trigger de banco para acionar o worker reativamente [ADR-002]",
+      "Descartado: worker embutido no processo da API [ADR-002]",
+      "Descartado: retry com 3 tentativas em janela curta [ADR-003]",
+      "Descartado: retry indefinido [ADR-003]",
+      "Descartado: truncamento de payload acima de 64 KB [PRD seção Fora de escopo]",
+      "Descartado: dead letter como campo de estado na própria outbox [ADR-003]",
+      "Descartado: secret global compartilhada entre endpoints [ADR-004]",
+      "Descartado: entrega exactly-once [ADR-005]",
+      "Descartado: auditoria do replay apoiada apenas no log compartilhado Pino [ADR-006]"
+    ]
+  },
+  "detailed_flows": {
+    "main_flow": [
+      "Dentro de this.prisma.$transaction no changeStatus: leitura do pedido, ajuste de stockQuantity, tx.order.update, insert em order_status_history [ADR-001]",
+      "Depois do tx.order.update: publishWebhookEvent(tx, order, fromStatus, toStatus) consulta webhooks ativos, filtra por status de interesse, insere na webhook_outbox com payload snapshot e event_id UUID [ADR-001]",
+      "Transação comita, persistindo status e evento em conjunto [PRD seção RF-03]",
+      "Worker em processo separado faz polling a cada 2s, seleciona lote de pendentes mais antigos [ADR-002]",
+      "Para cada evento: monta headers X-Event-Id, X-Signature, X-Timestamp, X-Webhook-Id, envia POST com timeout de 10s [PRD seção RF-04]",
+      "Sucesso: marca o evento como entregue na outbox e registra a entrega [PRD seção RF-04]"
+    ],
+    "alternative_flows": [
+      "Retry: timeout ou erro do cliente conta como falha, próxima tentativa calculada pela progressão 1min/5min/30min/2h/12h [ADR-003]",
+      "Sucesso antes de esgotar tentativas: evento marcado como entregue, ciclo encerrado [PRD seção RF-05]",
+      "Escalonamento para dead letter: esgotada a 5ª tentativa, evento movido para webhook_dead_letter com payload, motivo e timestamp [ADR-003]",
+      "Replay administrativo: POST /admin/webhooks/dead-letter/:id/replay, restrito a ADMIN via requireRole, recoloca o evento como pendente preservando o X-Event-Id original, registra auditoria [PRD seção RF-07] [ADR-003] [ADR-005] [ADR-006]"
+    ],
+    "diagrams": [
+      "Sequência (a) publicação transacional: tx.order.update -> publishWebhookEvent -> consulta webhooks ativos + filtro de status -> insert em webhook_outbox -> commit [ADR-001]",
+      "Sequência (b) worker/polling: loop a cada 2s -> seleciona lote -> processa (sequencial por order_id, concorrente entre pedidos) -> monta headers -> POST timeout 10s -> sucesso/falha [ADR-002]",
+      "Sequência (c) retry/dead letter: falha -> registra tentativa -> calcula próximo horário -> repete até 5 tentativas -> move para webhook_dead_letter [ADR-003]"
+    ]
+  },
+  "public_contracts": [
+    {
+      "name": "Cadastro de webhook",
+      "kind": "http_endpoint",
+      "signature_or_route": "POST /webhooks",
+      "method": "POST",
+      "request_example": {
+        "customer_id": "cus_456",
+        "url": "https://cliente.example.com/webhooks/oms",
+        "statuses": ["SHIPPED", "DELIVERED"]
+      },
+      "response_example": {
+        "id": "b2e1c9e4-...",
+        "customer_id": "cus_456",
+        "url": "https://cliente.example.com/webhooks/oms",
+        "statuses": ["SHIPPED", "DELIVERED"],
+        "active": true,
+        "secret": "whsec_...",
+        "createdAt": "2026-09-09T12:00:00.000Z"
+      },
+      "headers_semantics": [],
+      "status_semantics": [
+        "201 Created: webhook criado (inferência do padrão de código)",
+        "400 Bad Request: WEBHOOK_INVALID_URL, URL não é HTTPS ou não passa na validação [PRD seção RF-01]",
+        "401 Unauthorized: sem JWT válido [PRD seção RF-01]"
+      ],
+      "limits": {
+        "rate": "não definido pela fonte",
+        "payload_size": "não se aplica a este contrato",
+        "timeout": "não se aplica a este contrato"
+      },
+      "versioning": "não definido pela fonte"
+    },
+    {
+      "name": "Listagem de webhooks",
+      "kind": "http_endpoint",
+      "signature_or_route": "GET /webhooks?customer_id={id} (hipótese quanto ao mecanismo de escopo por customer)",
+      "method": "GET",
+      "request_example": {},
+      "response_example": {
+        "data": [
+          {
+            "id": "b2e1c9e4-...",
+            "customer_id": "cus_456",
+            "url": "https://cliente.example.com/webhooks/oms",
+            "statuses": ["SHIPPED", "DELIVERED"],
+            "active": true
+          }
+        ]
+      },
+      "headers_semantics": [],
+      "status_semantics": [
+        "200 OK: lista os webhooks cadastrados do customer [PRD seção RF-01]"
+      ],
+      "limits": {
+        "rate": "não definido pela fonte",
+        "payload_size": "não se aplica a este contrato",
+        "timeout": "não se aplica a este contrato"
+      },
+      "versioning": "não definido pela fonte"
+    },
+    {
+      "name": "Atualização de webhook",
+      "kind": "http_endpoint",
+      "signature_or_route": "PATCH /webhooks/:id",
+      "method": "PATCH",
+      "request_example": {
+        "statuses": ["DELIVERED"],
+        "active": false
+      },
+      "response_example": {
+        "id": "b2e1c9e4-...",
+        "url": "https://cliente.example.com/webhooks/oms",
+        "statuses": ["DELIVERED"],
+        "active": false
+      },
+      "headers_semantics": [],
+      "status_semantics": [
+        "200 OK: URL, status filtrados ou estado ativo atualizados [PRD seção RF-01]",
+        "404 Not Found: WEBHOOK_NOT_FOUND [PRD seção RF-01]",
+        "400 Bad Request: WEBHOOK_INVALID_URL [PRD seção RF-01]"
+      ],
+      "limits": {
+        "rate": "não definido pela fonte",
+        "payload_size": "não se aplica a este contrato",
+        "timeout": "não se aplica a este contrato"
+      },
+      "versioning": "não definido pela fonte"
+    },
+    {
+      "name": "Remoção de webhook",
+      "kind": "http_endpoint",
+      "signature_or_route": "DELETE /webhooks/:id",
+      "method": "DELETE",
+      "request_example": {},
+      "response_example": {},
+      "headers_semantics": [],
+      "status_semantics": [
+        "204 No Content: remoção do webhook, sem corpo (inferência do padrão de código) [PRD seção RF-01]",
+        "404 Not Found: WEBHOOK_NOT_FOUND [PRD seção RF-01]"
+      ],
+      "limits": {
+        "rate": "não definido pela fonte",
+        "payload_size": "não se aplica a este contrato",
+        "timeout": "não se aplica a este contrato"
+      },
+      "versioning": "não definido pela fonte"
+    },
+    {
+      "name": "Histórico de entregas",
+      "kind": "http_endpoint",
+      "signature_or_route": "GET /webhooks/:id/deliveries",
+      "method": "GET",
+      "request_example": {},
+      "response_example": {
+        "data": [
+          {
+            "eventId": "5f2a...",
+            "success": true,
+            "requestPayload": { "event_type": "order.status_changed" },
+            "responseStatus": 200,
+            "responseTimeMs": 340
+          }
+        ]
+      },
+      "headers_semantics": [],
+      "status_semantics": [
+        "200 OK: até 100 registros mais recentes, com resultado, payload, resposta e tempo de resposta [PRD seção RF-08]",
+        "404 Not Found: WEBHOOK_NOT_FOUND [PRD seção RF-08]"
+      ],
+      "limits": {
+        "rate": "não definido pela fonte",
+        "payload_size": "até 100 registros por resposta [PRD seção RF-08]",
+        "timeout": "não se aplica a este contrato"
+      },
+      "versioning": "não definido pela fonte"
+    },
+    {
+      "name": "Replay administrativo de dead letter",
+      "kind": "http_endpoint",
+      "signature_or_route": "POST /admin/webhooks/dead-letter/:id/replay",
+      "method": "POST",
+      "request_example": {},
+      "response_example": {
+        "eventId": "5f2a...",
+        "status": "pending"
+      },
+      "headers_semantics": [],
+      "status_semantics": [
+        "200 OK: evento recolocado como pendente na outbox [PRD seção RF-07] [ADR-003]",
+        "403 Forbidden: WEBHOOK_REPLAY_FORBIDDEN (hipótese), sem papel ADMIN [PRD seção RF-07] [ADR-006]",
+        "404 Not Found: WEBHOOK_NOT_FOUND, item de dead letter não existe [PRD seção RF-07]"
+      ],
+      "limits": {
+        "rate": "não definido pela fonte",
+        "payload_size": "não se aplica a este contrato",
+        "timeout": "não se aplica a este contrato"
+      },
+      "versioning": "não definido pela fonte"
+    },
+    {
+      "name": "Rotação de secret",
+      "kind": "http_endpoint",
+      "signature_or_route": "POST /webhooks/:id/secret/rotate (hipótese quanto ao path exato) [PRD seção RF-02]",
+      "method": "POST",
+      "request_example": {},
+      "response_example": {
+        "id": "b2e1c9e4-...",
+        "secret": "whsec_novo...",
+        "previousSecretValidUntil": "2026-09-10T12:00:00.000Z"
+      },
+      "headers_semantics": [],
+      "status_semantics": [
+        "200 OK: nova secret gerada, anterior válida por 24h de grace period [PRD seção RF-02] [ADR-004]",
+        "404 Not Found: WEBHOOK_NOT_FOUND [PRD seção RF-01]",
+        "422 Unprocessable Entity: WEBHOOK_SECRET_REQUIRED [PRD seção RF-02] [PRD seção RF-06]"
+      ],
+      "limits": {
+        "rate": "não definido pela fonte",
+        "payload_size": "não se aplica a este contrato",
+        "timeout": "não se aplica a este contrato"
+      },
+      "versioning": "não definido pela fonte"
+    },
+    {
+      "name": "Entrega do evento ao endpoint do cliente",
+      "kind": "webhook",
+      "signature_or_route": "URL cadastrada pelo cliente no cadastro de webhook",
+      "method": "POST",
+      "request_example": {
+        "event_id": "5f2a1c8e-...",
+        "event_type": "order.status_changed",
+        "timestamp": "2026-09-09T12:00:05.123Z",
+        "order_id": "ord_123",
+        "order_number": "OMS-000123",
+        "from_status": "PROCESSING",
+        "to_status": "SHIPPED",
+        "customer_id": "cus_456",
+        "total_cents": 15990
+      },
+      "response_example": {},
+      "headers_semantics": [
+        "X-Event-Id: UUID único gerado na inserção na outbox, usado para deduplicação [ADR-005]",
+        "X-Signature: HMAC-SHA256 do corpo, calculado com a secret ativa do endpoint [ADR-004]",
+        "X-Timestamp e X-Webhook-Id: enviados junto à assinatura [PRD seção RF-06] [ADR-004]",
+        "Content-Type: application/json [PRD seção RF-04]"
+      ],
+      "status_semantics": [
+        "Resposta de sucesso (2xx, faixa exata não fixada pela fonte) marca o evento como entregue [PRD seção RF-04]",
+        "Qualquer outra resposta ou timeout de 10s conta como falha [PRD seção RF-04]"
+      ],
+      "limits": {
+        "rate": "adiado, observar e decidir depois [PRD seção Ponto em aberto] [RFC seção Questões em aberto]",
+        "payload_size": "64 KB, acima disso não é enviado, gera erro registrado sem truncamento [PRD seção Escopo] [PRD seção RF-04]",
+        "timeout": "10 segundos por requisição [PRD seção RF-04] [ADR-003]"
+      },
+      "versioning": "não definido pela fonte, versionamento de schema do payload é questão em aberto [RFC seção Questões em aberto]"
+    }
+  ],
+  "errors_exceptions_fallback": {
+    "error_matrix": [
+      {
+        "condition": "webhook ou item de dead letter informado não existe",
+        "treatment": "WEBHOOK_NOT_FOUND, 404, tratado pelo error middleware sem alteração; PRD pede seguir padrão NotFoundError em semântica, não em herança, por NotFoundError fixar errorCode sem parâmetro [PRD seção RF-01] [PRD seção RF-07] [PRD seção RF-08] [ADR-006]",
+        "notes": "não é hipótese, código citado literalmente no PRD"
+      },
+      {
+        "condition": "URL não é HTTPS ou não passa na validação de schema",
+        "treatment": "WEBHOOK_INVALID_URL, herda de BadRequestError, 400 [PRD seção RF-01] [ADR-006]",
+        "notes": "não é hipótese, código citado literalmente no PRD"
+      },
+      {
+        "condition": "operação depende de secret ativa e ela não existe",
+        "treatment": "WEBHOOK_SECRET_REQUIRED, herda de UnprocessableEntityError, 422 (hipótese quanto à classe, não definida pela fonte) [PRD seção RF-01] [PRD seção RF-02] [PRD seção RF-06]",
+        "notes": "código citado no PRD; classe base é hipótese"
+      },
+      {
+        "condition": "usuário autenticado sem papel ADMIN no replay",
+        "treatment": "WEBHOOK_REPLAY_FORBIDDEN (hipótese), 403, composto para cumprir o critério do PRD de que todo erro do módulo carrega prefixo WEBHOOK_ [PRD seção Critérios de aceitação] [PRD seção RF-07] [ADR-006]",
+        "notes": "hipótese, código não citado literalmente pela fonte"
+      },
+      {
+        "condition": "falha de inserção na outbox dentro da transação do changeStatus",
+        "treatment": "WEBHOOK_OUTBOX_INSERT_FAILED (hipótese), composto para manter a matriz 100% WEBHOOK_*, não definido pela fonte [PRD seção Critérios de aceitação] [PRD seção RF-03] [RFC seção Impacto e riscos]",
+        "notes": "hipótese, código não citado literalmente pela fonte"
+      }
+    ],
+    "resilience_strategies": ["timeouts", "retries", "backoff"],
+    "fallback_policy": "Esgotada a 5ª tentativa, o evento é movido para webhook_dead_letter (tabela separada), com payload, motivo da falha e timestamp, e só é reprocessado por ação manual administrativa via replay [ADR-003]",
+    "invariants": [
+      "Nunca existe status de pedido alterado sem evento correspondente gravado, garantido por transação única com rollback conjunto [ADR-001] [PRD seção Critérios de aceitação]",
+      "Payload gravado como snapshot no momento da inserção, nunca recalculado no envio [ADR-001]",
+      "Secret nunca exposta fora do momento de emissão [ADR-004]",
+      "Replay preserva o X-Event-Id original, nunca gera identificador novo [ADR-005]",
+      "Entrega é at-least-once, nunca exactly-once [ADR-005]",
+      "Payload acima de 64 KB nunca é enviado nem truncado, apenas gera erro registrado [PRD seção RF-04]",
+      "Ordenação por order_id é invariante apenas sob premissa de worker único, não garantida por mecanismo técnico [ADR-002] [RFC seção Impacto e riscos]"
+    ]
+  },
+  "observability": {
+    "metrics": [
+      "Proporção entre eventos gravados na outbox e mudanças de status com webhook inscrito, meta de 100% [PRD seção Objetivos e métricas]",
+      "Número de tentativas de entrega e janela total de backoff (meta: 5 tentativas, ~15h) [PRD seção Objetivos e métricas]",
+      "Tempo entre o commit da mudança de status e a chegada da requisição no endpoint do cliente (meta: <10s) [PRD seção Objetivos e métricas]",
+      "Histórico de entregas dos últimos 100 envios, exposto ao cliente [PRD seção Requisitos não funcionais - Observabilidade]",
+      "Contagem de eventos publicados, taxa de entrega bem-sucedida, tamanho da dead letter, tentativas por evento (hipótese, não definida pela fonte) [PRD seção Requisitos não funcionais - Observabilidade]"
+    ],
+    "logs": {
+      "format": "Pino, já presente em todo o projeto [PRD seção Requisitos não funcionais - Observabilidade]",
+      "fields": [
+        "redactPaths estendido para cobrir secret do webhook e assinatura calculada [ADR-004]",
+        "createLogger() parametrizada para aceitar nome de serviço, dando identidade própria ao worker [ADR-006]"
+      ]
+    },
+    "tracing": {
+      "spans": [],
+      "sampling": "NÃO DISCUTIDO como decisão fechada; tracing distribuído ponta a ponta é hipótese do PRD [PRD seção Requisitos não funcionais - Observabilidade]"
+    },
+    "dashboards_alerts": [
+      "Não definido pela fonte: restart, health check e alerta para o worker parado [PRD seção Requisitos não funcionais - Disponibilidade]",
+      "Não definido pela fonte: alerta de crescimento da dead letter [RFC seção Impacto e riscos]"
+    ]
+  },
+  "dependencies_compatibility": {
+    "dependencies": [
+      { "component": "MySQL via Prisma", "min_version": "não definida pela fonte", "notes": "banco e ORM já existentes [PRD seção Dependências - Técnica]" },
+      { "component": "src/modules/orders/order.service.ts (changeStatus)", "min_version": "não se aplica", "notes": "ponto de integração transacional já existente [ADR-001]" },
+      { "component": "AppError / src/shared/errors/http-errors.ts", "min_version": "não se aplica", "notes": "base das classes de erro WEBHOOK_* [ADR-006]" },
+      { "component": "src/middlewares/error.middleware.ts", "min_version": "não se aplica", "notes": "trata os erros do módulo sem alteração [ADR-006]" },
+      { "component": "src/shared/logger/index.ts", "min_version": "não se aplica", "notes": "redactPaths estendido, createLogger() parametrizada [ADR-006] [ADR-004]" },
+      { "component": "src/middlewares/auth.middleware.ts (requireRole)", "min_version": "não se aplica", "notes": "protege o replay administrativo [ADR-006]" },
+      { "component": "PrismaClient (instância própria do worker)", "min_version": "não definida pela fonte", "notes": "mesma DATABASE_URL da API [ADR-002]" }
+    ],
+    "compatibility_guarantees": [
+      "src/middlewares/error.middleware.ts trata os erros do módulo sem qualquer alteração, já despacha por instanceof AppError [ADR-006]",
+      "Padrão de módulo (controller, service, repository, routes, schemas) preservado, seguindo src/modules/orders/ [ADR-006]",
+      "requireRole e authenticate consumidos como estão, sem alteração [ADR-006]",
+      "Feature aditiva para clientes já integrados, GET /orders segue funcionando [RFC seção Impacto e riscos]"
+    ]
+  },
+  "existing_system_integration": [
+    {
+      "file_path": "src/modules/orders/order.service.ts",
+      "integration": "changeStatus passa a chamar publishWebhookEvent(tx, order, fromStatus, toStatus) com o client tx da transação corrente, depois do tx.order.update e antes do fim da transação [ADR-001]"
+    },
+    {
+      "file_path": "src/shared/errors/app-error.ts",
+      "integration": "Classe base AppError, da qual as classes de erro WEBHOOK_* do novo módulo herdam, direta ou via subclasses HTTP intermediárias [ADR-006]"
+    },
+    {
+      "file_path": "src/shared/errors/http-errors.ts",
+      "integration": "Classes de erro do módulo herdam das subclasses HTTP intermediárias quando aceitam código customizado (BadRequestError, ConflictError, UnprocessableEntityError); para WEBHOOK_NOT_FOUND e WEBHOOK_REPLAY_FORBIDDEN, constrói AppError diretamente, porque NotFoundError e ForbiddenError fixam errorCode sem parâmetro [ADR-006]"
+    },
+    {
+      "file_path": "src/middlewares/error.middleware.ts",
+      "integration": "Trata AppError pelo instanceof; trata os erros do módulo de webhooks sem qualquer alteração nele [ADR-006]"
+    },
+    {
+      "file_path": "src/middlewares/auth.middleware.ts",
+      "integration": "authenticate e requireRole reusados no endpoint de replay administrativo, restringindo o acesso ao papel ADMIN [ADR-003] [ADR-006]"
+    },
+    {
+      "file_path": "src/shared/logger/index.ts",
+      "integration": "redactPaths estendido para cobrir secret do webhook e assinatura; createLogger() parametrizada para aceitar nome de serviço, dando identidade própria ao worker [ADR-004] [ADR-006]"
+    },
+    {
+      "file_path": "src/app.ts",
+      "integration": "buildControllers alterado para fiar a nova dependência; módulo de webhooks segue o mesmo padrão de injeção manual de construtor usado para orders, products, customers e users [ADR-001] [ADR-006]"
+    },
+    {
+      "file_path": "src/server.ts",
+      "integration": "Precedente de entry point único do processo da API, ao lado do qual o worker ganha entry point próprio [ADR-002]"
+    }
+  ],
+  "acceptance_criteria": [
+    "Mudar o status para um status inscrito insere linha em webhook_outbox dentro da mesma transação; rollback não deixa linha na outbox [PRD seção Critérios de aceitação]",
+    "A requisição de entrega contém os headers X-Event-Id, X-Signature, X-Timestamp, X-Webhook-Id, Content-Type: application/json e o corpo com todos os campos do evento [PRD seção Critérios de aceitação]",
+    "X-Signature corresponde ao HMAC-SHA256 do corpo calculado com a secret do endpoint, verificável recalculando no teste [PRD seção Critérios de aceitação]",
+    "Cadastro com URL HTTP é recusado, com HTTPS é aceito [PRD seção Critérios de aceitação]",
+    "Payload acima de 64 KB não é enviado, resulta em erro registrado, sem truncamento [PRD seção Critérios de aceitação]",
+    "Rotação de secret gera nova secret, mantém a anterior válida por 24h e invalida após esse período [PRD seção Critérios de aceitação]",
+    "GET /webhooks/:id/deliveries retorna até 100 registros com resultado, payload, resposta, tempo de resposta [PRD seção Critérios de aceitação]",
+    "Todos os erros do módulo usam prefixo WEBHOOK_, herdam de AppError, tratados pelo error middleware sem alteração nele [PRD seção Critérios de aceitação]",
+    "Evento pendente entregue em menos de 10 segundos do commit, no cenário sem falha [PRD seção Critérios de aceitação]",
+    "Falhas sucessivas reagendam respeitando 1min/5min/30min/2h/12h; a falha da última tentativa move para webhook_dead_letter [PRD seção Critérios de aceitação]",
+    "POST /admin/webhooks/dead-letter/:id/replay recoloca o evento como pendente quando chamado por ADMIN, retorna erro de autorização sem esse papel [PRD seção Critérios de aceitação]",
+    "Dois eventos consecutivos do mesmo pedido chegam na ordem de created_at da outbox, em regime de worker único [PRD seção Critérios de aceitação]",
+    "Worker continua processando após reinício da API, comprovando processo separado [PRD seção Critérios de aceitação]"
+  ],
+  "risks": [
+    {
+      "risk": "Endpoint do cliente indisponível ou lento esgota as tentativas sem entrega",
+      "probability": "medium",
+      "impact": "Cliente deixa de ser notificado e volta a depender de consulta manual",
+      "mitigation": ["Retry com backoff cobrindo ~15h", "Timeout de 10s por tentativa"],
+      "contingency_plan": "Evento preservado em webhook_dead_letter, reprocessável via replay administrativo [PRD seção Riscos e mitigação]"
+    },
+    {
+      "risk": "Vazamento da secret de um cliente permite forjar eventos assinados",
+      "probability": "medium",
+      "impact": "Terceiro forja notificações válidas para o cliente afetado",
+      "mitigation": ["Secret única por endpoint", "Rotação disponível pela API", "Revisão de segurança do código antes do deploy"],
+      "contingency_plan": "Cliente solicita rotação; secret comprometida deixa de ser válida ao fim das 24h de grace period. Risco correlato não resolvido: secret comprometida segue válida por até 24h depois do pedido de troca [PRD seção Riscos e mitigação] [ADR-004]"
+    },
+    {
+      "risk": "Escalar para múltiplos workers quebra a ordenação de eventos do mesmo pedido",
+      "probability": "low",
+      "impact": "Cliente pode receber mudanças de status fora de ordem",
+      "mitigation": ["Manter worker único nesta entrega", "Documentar ausência de ordenação global"],
+      "contingency_plan": "Particionamento por order_id ou lock pessimista antes de introduzir um segundo worker, adiado para fase futura [PRD seção Riscos e mitigação] [ADR-002]"
+    },
+    {
+      "risk": "Volume alto de mudanças de status sobrecarrega o endpoint do cliente",
+      "probability": "medium",
+      "impact": "Endpoint do cliente recusa ou demora, gerando falhas e consumo de retries",
+      "mitigation": ["Nenhuma implementada nesta entrega; decisão de observar e agir depois"],
+      "contingency_plan": "Hipótese: sobrecarga absorvida por retry e dead letter; rate limiting reaberto com dados observados [PRD seção Riscos e mitigação]"
+    },
+    {
+      "risk": "Cliente que não implementa deduplicação processa o mesmo evento mais de uma vez",
+      "probability": "medium",
+      "impact": "Inconsistência no sistema do cliente",
+      "mitigation": ["X-Event-Id único por evento", "Documentação da garantia at-least-once"],
+      "contingency_plan": "Nenhuma ação corretiva além de documentação e suporte; risco residual aceito conscientemente [PRD seção Riscos e mitigação] [ADR-005]"
+    },
+    {
+      "risk": "Falha na inserção do evento na outbox impede a mudança de status do pedido",
+      "probability": "low",
+      "impact": "Operação de mudança de status falha para o usuário, por motivo alheio ao domínio de pedidos",
+      "mitigation": ["Inserção do evento na mesma transação do changeStatus, com rollback conjunto", "Payload como snapshot"],
+      "contingency_plan": "Hipótese: erro propaga pelo error middleware existente, cabendo ao chamador repetir a operação [PRD seção Riscos e mitigação] [ADR-001]"
+    },
+    {
+      "risk": "Vazamento de secret ou assinatura pelo log estruturado",
+      "probability": "low",
+      "impact": "Exposição de segredo criptográfico em log, equivalente a vazamento da secret",
+      "mitigation": ["Extensão de redactPaths em src/shared/logger/index.ts para cobrir secret e assinatura"],
+      "contingency_plan": "Risco levantado no debate da RFC, só se fecha quando a extensão de redactPaths existir de fato no código [RFC seção Impacto e riscos] [ADR-004]"
+    },
+    {
+      "risk": "Crescimento indefinido da tabela de outbox degrada o polling do worker",
+      "probability": "low",
+      "impact": "Consulta de pendentes a cada 2s compete com tabela cada vez maior, sem arquivamento",
+      "mitigation": ["Nenhuma implementada nesta entrega"],
+      "contingency_plan": "Arquivamento das linhas entregues (~30 dias) fica como próxima fase [RFC seção Impacto e riscos] [PRD seção Fora de escopo]"
+    },
+    {
+      "risk": "Duas instâncias do worker coexistindo tornam entregas legítimas indistinguíveis de reentrega maliciosa",
+      "probability": "low",
+      "impact": "Duas entregas legítimas do mesmo evento chegam com o mesmo X-Event-Id, indistinguíveis de reentrega capturada por terceiro",
+      "mitigation": ["Nenhuma implementada nesta entrega"],
+      "contingency_plan": "Levantado no debate como agravante de segurança sobre a garantia at-least-once, permanece questão em aberto [ADR-005]"
+    }
+  ]
+}
